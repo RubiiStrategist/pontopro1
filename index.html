@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PontoPro — Folha de Ponto (Nuvem)</title>
+  <style>
+    :root{
+      --bg:#0b1220;--panel:rgba(255,255,255,.06);--panel2:rgba(255,255,255,.09);
+      --text:#e8eefc;--muted:rgba(232,238,252,.72);--line:rgba(255,255,255,.12);
+      --accent:#6d5efc;--accent2:#33d6a6;--warn:#ffcc66;--danger:#ff6b6b;--good:#5cf2a6;
+      --shadow:0 20px 60px rgba(0,0,0,.35);--radius:18px;--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      --sans:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+    }
+    [data-theme="light"]{
+      --bg:#f6f7fb;--panel:rgba(0,0,0,.05);--panel2:rgba(0,0,0,.07);
+      --text:#101828;--muted:rgba(16,24,40,.68);--line:rgba(0,0,0,.12);
+      --accent:#4f46e5;--accent2:#0ea5e9;--warn:#d97706;--danger:#dc2626;--good:#16a34a;
+      --shadow:0 20px 50px rgba(16,24,40,.16);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;color:var(--text);font-family:var(--sans);
+      background:radial-gradient(1200px 700px at 20% -10%, rgba(109,94,252,.35), transparent 60%),
+                radial-gradient(900px 600px at 120% 20%, rgba(51,214,166,.25), transparent 55%),
+                var(--bg);
+    }
+    .wrap{max-width:1160px;margin:0 auto;padding:24px}
+    .topbar{
+      display:flex;gap:14px;align-items:center;justify-content:space-between;
+      padding:14px 16px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+      border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+      position:sticky;top:12px;z-index:50;backdrop-filter:blur(10px)
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:40px;height:40px;border-radius:14px;
+      background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), transparent 45%),
+                linear-gradient(135deg,var(--accent), rgba(51,214,166,.85));
+      box-shadow:0 14px 30px rgba(109,94,252,.25);
+      border:1px solid rgba(255,255,255,.16)
+    }
+    .brand h1{font-size:16px;line-height:1.1;margin:0;letter-spacing:.2px}
+    .brand p{margin:0;font-size:12px;color:var(--muted)}
+    .nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .btn{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,var(--panel2),var(--panel));
+      color:var(--text);padding:10px 12px;border-radius:14px;cursor:pointer;
+      font-weight:650;letter-spacing:.1px;transition:.18s transform,.18s border-color;
+      display:inline-flex;align-items:center;gap:8px;user-select:none
+    }
+    .btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.22)}
+    .btn:active{transform:translateY(0)}
+    .btn.primary{border-color:rgba(109,94,252,.55);background:linear-gradient(180deg, rgba(109,94,252,.25), rgba(109,94,252,.12))}
+    .btn.good{border-color:rgba(92,242,166,.45);background:linear-gradient(180deg, rgba(92,242,166,.22), rgba(92,242,166,.10))}
+    .btn.danger{border-color:rgba(255,107,107,.55);background:linear-gradient(180deg, rgba(255,107,107,.22), rgba(255,107,107,.10))}
+    .btn.ghost{background:transparent}
+    .pill{
+      font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:999px;
+      border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--muted)
+    }
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}.topbar{position:static}}
+    .card{
+      background:linear-gradient(180deg,var(--panel2),var(--panel));
+      border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+      padding:16px;backdrop-filter:blur(10px)
+    }
+    .card h2{margin:0 0 8px 0;font-size:14px;letter-spacing:.2px}
+    .card .sub{margin:0 0 14px 0;color:var(--muted);font-size:12px;line-height:1.4}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row.spread{justify-content:space-between}
+    .field{display:flex;flex-direction:column;gap:6px;flex:1 1 160px;min-width:150px}
+    label{font-size:12px;color:var(--muted)}
+    input,select,textarea{
+      background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);
+      border-radius:14px;padding:12px 12px;outline:none;transition:.18s border-color,.18s transform,.18s background
+    }
+    textarea{min-height:84px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:rgba(109,94,252,.55);background:rgba(255,255,255,.08);transform:translateY(-1px)}
+    .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+    .kpi{border:1px solid var(--line);border-radius:16px;padding:12px;background:rgba(255,255,255,.05)}
+    .kpi .t{font-size:12px;color:var(--muted)}
+    .kpi .v{font-family:var(--mono);font-weight:800;margin-top:6px;font-size:16px}
+    .sep{height:1px;background:var(--line);margin:12px 0}
+    table{
+      width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:16px;
+      border:1px solid var(--line);background:rgba(255,255,255,.04)
+    }
+    thead th{
+      text-align:left;font-size:12px;color:var(--muted);padding:10px 10px;
+      border-bottom:1px solid var(--line);background:rgba(0,0,0,.08)
+    }
+    tbody td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;vertical-align:top}
+    tbody tr:last-child td{border-bottom:none}
+    .mono{font-family:var(--mono)}
+    .badge{
+      font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:999px;
+      border:1px solid var(--line);background:rgba(255,255,255,.06);
+      display:inline-flex;align-items:center;gap:8px;color:var(--muted)
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+    .dot.good{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--danger)}
+    .tag{
+      display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);
+      padding:6px 10px;border-radius:999px;font-size:12px;background:rgba(255,255,255,.05);
+      color:var(--muted);margin-right:6px;margin-top:6px;white-space:nowrap
+    }
+    .toast{
+      position:fixed;left:50%;bottom:20px;transform:translateX(-50%);
+      background:rgba(17,24,39,.92);border:1px solid rgba(255,255,255,.14);color:#fff;
+      padding:10px 12px;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.35);
+      font-size:13px;display:none;z-index:9999;max-width:92vw;backdrop-filter:blur(10px)
+    }
+    [data-theme="light"] .toast{background:rgba(255,255,255,.92);color:#101828;border-color:rgba(0,0,0,.12)}
+    .tIn{width:84px;padding:8px 10px;border-radius:12px;font-family:var(--mono);font-weight:700}
+    .tIn.small{width:74px}
+    .tBtn{padding:8px 10px;border-radius:12px}
+    /* login modal */
+    .modal{
+      position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9998;
+      background:rgba(0,0,0,.55);backdrop-filter:blur(10px);padding:18px
+    }
+    .modalCard{
+      width:min(560px, 96vw);
+      background:linear-gradient(180deg,var(--panel2),var(--panel));
+      border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);
+      padding:16px
+    }
+    .modalCard h3{margin:0 0 6px 0;font-size:16px}
+    .modalCard p{margin:0 0 12px 0;color:var(--muted);font-size:12px;line-height:1.4}
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app" data-theme="dark">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>PontoPro <span class="pill">NUVEM</span></h1>
+          <p>Supabase • Login • Multi-funcionário • Enter navega • Setas sobem/descem</p>
+        </div>
+      </div>
+      <div class="nav">
+        <button class="btn ghost" id="btnPageMes">📅 Mês (Planilha)</button>
+        <button class="btn ghost" id="btnPagePonto">🕒 Dia</button>
+        <button class="btn ghost" id="btnPageFuncionarios">👥 Funcionários</button>
+        <button class="btn" id="btnTheme">🌗 Tema</button>
+        <button class="btn danger" id="btnLogout">🚪 Sair</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card" id="page"></div>
+
+      <div class="card" id="sidebar">
+        <h2>Config + Resumo</h2>
+        <p class="sub">Tudo salva na nuvem. Exporta CSV/JSON quando quiser.</p>
+
+        <div class="row">
+          <div class="field" style="flex:1 1 240px;">
+            <label>Funcionário selecionado</label>
+            <select id="employeeSelect"></select>
+          </div>
+          <button class="btn primary" id="btnNewEmployee">➕ Novo</button>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Valor por hora (R$)</label>
+            <input id="hourRate" inputmode="decimal" placeholder="Ex: 12,50">
+          </div>
+          <div class="field">
+            <label>Multiplicador extra</label>
+            <input id="otMult" inputmode="decimal" placeholder="Ex: 1,5">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Jornada padrão (0000)</label>
+            <input id="defaultSched" inputmode="numeric" placeholder="0800">
+          </div>
+          <div class="field" style="justify-content:flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn primary" id="btnApplySchedMonth">⚡ Aplicar no mês</button>
+          </div>
+        </div>
+
+        <div class="kpis" id="kpis"></div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <button class="btn good" id="btnExportCSV">⬇️ Exportar CSV</button>
+          <button class="btn" id="btnExportJSON">⬇️ Exportar JSON</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <span class="badge"><span class="dot good"></span> Dia OK</span>
+          <span class="badge"><span class="dot warn"></span> Excedente</span>
+          <span class="badge"><span class="dot bad"></span> Incompleto</span>
+        </div>
+
+        <p class="sub" style="margin-top:12px;">
+          Dicas: <b>Enter</b> vai pra direita • <b>↑/↓</b> sobe/desce mantendo coluna • horas em <span class="mono">0000</span>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal" id="loginModal">
+    <div class="modalCard">
+      <h3>Entrar no PontoPro</h3>
+      <p>Use seu e-mail e senha do Supabase (Authentication → Users). Depois disso, tudo fica salvo na nuvem.</p>
+      <div class="row">
+        <div class="field" style="flex:1 1 240px;">
+          <label>E-mail</label>
+          <input id="loginEmail" type="email" placeholder="seu@email.com" autocomplete="username">
+        </div>
+        <div class="field" style="flex:1 1 220px;">
+          <label>Senha</label>
+          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="row spread" style="margin-top:10px;">
+        <span class="pill" id="loginStatus">Aguardando login…</span>
+        <div class="row">
+          <button class="btn" id="btnLogin">🔐 Entrar</button>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <p class="sub">
+        Se der erro de chave, confira se você colou a <b>anon/public key</b> do Supabase em Project Settings → API.
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ====== SUPABASE (Rubian: suas chaves já coladas) ======
+const SUPABASE_URL = "https://jwtwfwuigeuqobkzygme.supabase.co";
+const SUPABASE_KEY = "sb_publishable__X5HK0wifMJCmDKA78m-8Q_vClrDhbk"; // se der erro, troque pela anon/public key
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ====== UI refs ======
+const $ = (s)=>document.querySelector(s);
+const app = $("#app");
+const page = $("#page");
+const employeeSelect = $("#employeeSelect");
+const kpis = $("#kpis");
+const toastEl = $("#toast");
+const hourRateEl = $("#hourRate");
+const otMultEl = $("#otMult");
+const defaultSchedEl = $("#defaultSched");
+const btnApplySchedMonth = $("#btnApplySchedMonth");
+const loginModal = $("#loginModal");
+const loginEmail = $("#loginEmail");
+const loginPass = $("#loginPass");
+const loginStatus = $("#loginStatus");
+
+$("#btnPageMes").onclick = ()=> renderMesPlanilha();
+$("#btnPagePonto").onclick = ()=> renderPonto();
+$("#btnPageFuncionarios").onclick = ()=> renderFuncionarios();
+$("#btnTheme").onclick = ()=> toggleTheme();
+$("#btnNewEmployee").onclick = ()=> openEmployeeCreate();
+$("#btnExportCSV").onclick = ()=> exportCSV();
+$("#btnExportJSON").onclick = ()=> exportJSON();
+$("#btnLogout").onclick = ()=> doLogout();
+$("#btnLogin").onclick = ()=> doLogin();
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.style.display = "block";
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>toastEl.style.display="none", 1600);
+}
+
+// ====== State cache (pra ficar rápido) ======
+const state = {
+  session: null,
+  theme: "dark",
+  settingsRowId: null,
+  settings: { hourRate: 0, otMultiplier: 1.0, defaultScheduleMin: 480 },
+  employees: [],
+  selectedEmpId: null,
+  monthCache: { ym: null, empId: null, mapByDay: {} }, // {day -> entry}
+};
+
+function nowISODate(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function ymFromDate(dateStr){ return dateStr.slice(0,7); }
+function dayFromDate(dateStr){ return Number(dateStr.slice(8,10)); }
+function pad2(n){ return String(n).padStart(2,"0"); }
+
+// ====== Theme ======
+function themeApply(theme){ app.setAttribute("data-theme", theme); state.theme = theme; }
+function toggleTheme(){
+  themeApply(state.theme==="dark" ? "light" : "dark");
+  // opcional: salva no settings
+  saveSettingsToDB({ theme: state.theme }).catch(()=>{});
+}
+
+// ====== Parse / format ======
+function parseMoneyBr(v){
+  if(v==null) return 0;
+  const s = String(v).trim().replace(/\./g,"").replace(",",".");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
+function parseFloatSafe(v){
+  const s = String(v??"").trim().replace(",",".");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
+function fmtBRL(n){
+  try{ return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); }
+  catch{ return "R$ " + (Math.round(n*100)/100).toFixed(2).replace(".",","); }
+}
+function minutesFromHHMM(v){
+  if(!v) return null;
+  const [h,m]=v.split(":").map(Number);
+  if(Number.isNaN(h)||Number.isNaN(m)) return null;
+  return h*60 + m;
+}
+function hhmmFrom4digits(s){
+  if(!s) return "";
+  const cleaned=String(s).trim();
+  if(cleaned==="") return "";
+  if(!/^\d{4}$/.test(cleaned)) return "";
+  const h=Number(cleaned.slice(0,2));
+  const m=Number(cleaned.slice(2,4));
+  if(h>23||m>59) return "";
+  return `${pad2(h)}:${pad2(m)}`;
+}
+function schedule4ToMin(v){
+  if(!v) return null;
+  const clean=String(v).replace(/[^\d]/g,"").slice(0,4);
+  if(!/^\d{4}$/.test(clean)) return null;
+  const h=Number(clean.slice(0,2));
+  const m=Number(clean.slice(2,4));
+  if(m>59) return null;
+  return h*60+m;
+}
+function minTo4(min){
+  min=Number(min ?? 480);
+  const h=Math.floor(min/60), m=min%60;
+  return `${pad2(h)}${pad2(m)}`;
+}
+function fmtMin(min){
+  if(min===null||min===undefined) return "—";
+  const h=Math.floor(min/60), m=min%60;
+  return `${h}:${pad2(m)}`;
+}
+function escapeHTML(s){
+  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+function slug(s){
+  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+}
+
+// ====== Calc ======
+function calcWorkedAndOver(entry){
+  if(entry?.folga) return {workedMin:0, overMin:0, status:"folga"};
+  const tin=minutesFromHHMM(entry.inHHMM);
+  const tout=minutesFromHHMM(entry.outHHMM);
+  if(tin===null||tout===null) return {workedMin:null, overMin:null, status:"incompleto"};
+
+  let total=tout-tin;
+  if(total<0) total += 24*60;
+
+  const tb1=minutesFromHHMM(entry.breakStartHHMM);
+  const tb2=minutesFromHHMM(entry.breakEndHHMM);
+  let br=0;
+  if(tb1!==null && tb2!==null){
+    br=tb2-tb1;
+    if(br<0) br += 24*60;
+  }
+  const worked=Math.max(total-br,0);
+  const sched=Math.max(Number(entry.scheduleMin ?? state.settings.defaultScheduleMin ?? 480),0);
+  const over=Math.max(worked-sched,0);
+  return {workedMin:worked, overMin:over, status: over>0 ? "exced" : "ok"};
+}
+function calcOverPay(overMinutes){
+  const rate = Number(state.settings.hourRate ?? 0);
+  const mult = Number(state.settings.otMultiplier ?? 1.0);
+  const hours = (overMinutes||0) / 60;
+  return Math.max(hours * rate * mult, 0);
+}
+function monthStats(monthMap){
+  let daysWorked=0,totalWorked=0,totalOver=0,incomplete=0,folgas=0;
+  for(const entry of Object.values(monthMap || {})){
+    const c=calcWorkedAndOver(entry);
+    if(c.status==="folga"){ folgas++; continue; }
+    if(c.workedMin===null){ incomplete++; continue; }
+    daysWorked++; totalWorked+=c.workedMin; totalOver+=c.overMin;
+  }
+  return {daysWorked,totalWorked,totalOver,incomplete,folgas};
+}
+
+// ====== Auth ======
+async function getSession(){
+  const { data } = await supabase.auth.getSession();
+  return data.session || null;
+}
+async function doLogin(){
+  loginStatus.textContent = "Entrando…";
+  try{
+    const email = (loginEmail.value || "").trim();
+    const password = loginPass.value || "";
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+    loginStatus.textContent = "Logado ✅";
+    showToast("Bem-vindo!");
+    await boot();
+  }catch(err){
+    loginStatus.textContent = "Erro no login ❌";
+    showToast(err?.message || "Erro no login.");
+  }
+}
+async function doLogout(){
+  await supabase.auth.signOut();
+  state.session = null;
+  loginModal.style.display = "flex";
+  showToast("Saiu.");
+}
+
+// ====== DB: settings ======
+async function loadSettings(){
+  // tenta pegar 1ª linha de settings
+  const { data, error } = await supabase.from("settings").select("*").limit(1);
+  if(error) throw error;
+  const row = data?.[0];
+  if(row){
+    state.settingsRowId = row.id;
+    state.settings.hourRate = Number(row.hour_rate ?? row.hourRate ?? 0);
+    state.settings.otMultiplier = Number(row.ot_multiplier ?? row.otMultiplier ?? 1.0);
+    state.settings.defaultScheduleMin = Number(row.default_schedule_min ?? row.defaultScheduleMin ?? 480);
+    if(row.theme) state.theme = row.theme;
+  }else{
+    // cria uma linha
+    const ins = await supabase.from("settings").insert({
+      hour_rate: 0, ot_multiplier: 1.0, default_schedule_min: 480, theme: "dark"
+    }).select("id").single();
+    if(ins.error) throw ins.error;
+    state.settingsRowId = ins.data.id;
+  }
+}
+async function saveSettingsToDB(partial){
+  if(!state.settingsRowId) return;
+  const payload = {};
+  if(partial.hourRate!==undefined){ payload.hour_rate = partial.hourRate; state.settings.hourRate = partial.hourRate; }
+  if(partial.otMultiplier!==undefined){ payload.ot_multiplier = partial.otMultiplier; state.settings.otMultiplier = partial.otMultiplier; }
+  if(partial.defaultScheduleMin!==undefined){ payload.default_schedule_min = partial.defaultScheduleMin; state.settings.defaultScheduleMin = partial.defaultScheduleMin; }
+  if(partial.theme!==undefined){ payload.theme = partial.theme; state.theme = partial.theme; }
+  if(Object.keys(payload).length===0) return;
+  payload.updated_at = new Date().toISOString();
+  const { error } = await supabase.from("settings").update(payload).eq("id", state.settingsRowId);
+  if(error) throw error;
+}
+
+// ====== DB: employees ======
+async function fetchEmployees(){
+  const { data, error } = await supabase.from("employees").select("*").order("created_at", {ascending:true});
+  if(error) throw error;
+  state.employees = (data || []).map(r=>({
+    id: r.id, name: r.name, role: r.role || "", active: r.active !== false, createdAt: r.created_at
+  })).filter(e=>e.active!==false);
+}
+async function createEmployee(name, role){
+  const { data, error } = await supabase.from("employees")
+    .insert({ name, role, active:true })
+    .select("*").single();
+  if(error) throw error;
+  return { id:data.id, name:data.name, role:data.role||"", active:true, createdAt:data.created_at };
+}
+async function updateEmployee(id, name, role){
+  const { error } = await supabase.from("employees").update({ name, role }).eq("id", id);
+  if(error) throw error;
+}
+async function deleteEmployee(id){
+  // delete cascade entries
+  const { error } = await supabase.from("employees").delete().eq("id", id);
+  if(error) throw error;
+}
+
+// ====== DB: entries ======
+function defaultEntryFor(date){
+  return {
+    date,
+    in4:"", breakStart4:"", breakEnd4:"", out4:"",
+    inHHMM:"", breakStartHHMM:"", breakEndHHMM:"", outHHMM:"",
+    scheduleMin: state.settings.defaultScheduleMin ?? 480,
+    obs:"",
+    folga:false
+  };
+}
+async function fetchMonthEntries(empId, ym){
+  const start = `${ym}-01`;
+  const end = `${ym}-31`;
+  const { data, error } = await supabase.from("entries")
+    .select("*")
+    .eq("employee_id", empId)
+    .gte("date", start)
+    .lte("date", end);
+  if(error) throw error;
+
+  const map = {};
+  for(const row of (data||[])){
+    const d = Number(String(row.date).slice(8,10));
+    map[d] = {
+      date: row.date,
+      in4: row.in4 || "",
+      breakStart4: row.break_start4 || "",
+      breakEnd4: row.break_end4 || "",
+      out4: row.out4 || "",
+      inHHMM: hhmmFrom4digits(row.in4 || ""),
+      breakStartHHMM: hhmmFrom4digits(row.break_start4 || ""),
+      breakEndHHMM: hhmmFrom4digits(row.break_end4 || ""),
+      outHHMM: hhmmFrom4digits(row.out4 || ""),
+      scheduleMin: row.schedule_min ?? (state.settings.defaultScheduleMin ?? 480),
+      obs: row.obs || "",
+      folga: !!row.folga,
+    };
+  }
+  state.monthCache = { ym, empId, mapByDay: map };
+  return map;
+}
+async function upsertEntry(empId, dateISO, entry){
+  const payload = {
+    employee_id: empId,
+    date: dateISO,
+    in4: entry.in4 || null,
+    break_start4: entry.breakStart4 || null,
+    break_end4: entry.breakEnd4 || null,
+    out4: entry.out4 || null,
+    schedule_min: entry.scheduleMin ?? (state.settings.defaultScheduleMin ?? 480),
+    folga: !!entry.folga,
+    obs: entry.obs || null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from("entries").upsert(payload, { onConflict: "employee_id,date" });
+  if(error) throw error;
+
+  // atualiza cache
+  const d = Number(dateISO.slice(8,10));
+  const cached = {
+    date: dateISO,
+    in4: entry.in4||"",
+    breakStart4: entry.breakStart4||"",
+    breakEnd4: entry.breakEnd4||"",
+    out4: entry.out4||"",
+    inHHMM: hhmmFrom4digits(entry.in4||""),
+    breakStartHHMM: hhmmFrom4digits(entry.breakStart4||""),
+    breakEndHHMM: hhmmFrom4digits(entry.breakEnd4||""),
+    outHHMM: hhmmFrom4digits(entry.out4||""),
+    scheduleMin: payload.schedule_min,
+    obs: entry.obs||"",
+    folga: !!entry.folga,
+  };
+  if(state.monthCache.empId===empId && state.monthCache.ym===ymFromDate(dateISO)){
+    state.monthCache.mapByDay[d] = cached;
+  }
+}
+async function setMonthSchedule(empId, ym, scheduleMin){
+  // upsert 31 dias com schedule_min (mantendo outros campos)
+  // pega mês atual cacheado pra usar valores existentes
+  let monthMap = (state.monthCache.empId===empId && state.monthCache.ym===ym) ? state.monthCache.mapByDay : await fetchMonthEntries(empId, ym);
+
+  const rows = [];
+  for(let d=1; d<=31; d++){
+    const dateISO = `${ym}-${pad2(d)}`;
+    const existing = monthMap[d] || defaultEntryFor(dateISO);
+    rows.push({
+      employee_id: empId,
+      date: dateISO,
+      schedule_min: scheduleMin,
+      in4: existing.in4 || null,
+      break_start4: existing.breakStart4 || null,
+      break_end4: existing.breakEnd4 || null,
+      out4: existing.out4 || null,
+      folga: !!existing.folga,
+      obs: existing.obs || null,
+      updated_at: new Date().toISOString()
+    });
+  }
+  const { error } = await supabase.from("entries").upsert(rows, { onConflict: "employee_id,date" });
+  if(error) throw error;
+
+  // atualiza cache
+  for(let d=1; d<=31; d++){
+    const dateISO = `${ym}-${pad2(d)}`;
+    const existing = monthMap[d] || defaultEntryFor(dateISO);
+    monthMap[d] = {
+      ...existing,
+      date: dateISO,
+      scheduleMin: scheduleMin
+    };
+  }
+  state.monthCache = { ym, empId, mapByDay: monthMap };
+}
+
+// ====== Sidebar ======
+function getSelectedEmployeeId(){ return state.selectedEmpId; }
+function setSelectedEmployeeId(id){
+  state.selectedEmpId = id;
+  localStorage.setItem("PONTOPRO_SELECTED_EMP", id);
+  employeeSelect.value = id;
+}
+function getPersistedSelectedEmployeeId(){ return localStorage.getItem("PONTOPRO_SELECTED_EMP"); }
+
+function renderEmployeeSelect(){
+  employeeSelect.innerHTML="";
+  state.employees.forEach(e=>{
+    const opt=document.createElement("option");
+    opt.value=e.id;
+    opt.textContent = e.name + (e.role?` — ${e.role}`:"");
+    employeeSelect.appendChild(opt);
+  });
+
+  const persisted = getPersistedSelectedEmployeeId();
+  const firstId = state.employees[0]?.id;
+  const target = persisted && state.employees.some(e=>e.id===persisted) ? persisted : firstId;
+  if(target) setSelectedEmployeeId(target);
+
+  employeeSelect.onchange = async ()=>{
+    setSelectedEmployeeId(employeeSelect.value);
+    await ensureMonthLoadedForSelected();
+    refreshSidebarKPIs();
+    currentPageRenderer?.();
+  };
+}
+
+function refreshSidebarKPIs(){
+  const empId=getSelectedEmployeeId();
+  if(!empId) return;
+  const ym=ymFromDate(nowISODate());
+  const map = (state.monthCache.empId===empId && state.monthCache.ym===ym) ? state.monthCache.mapByDay : {};
+  const s=monthStats(map);
+  const overPay = calcOverPay(s.totalOver);
+
+  kpis.innerHTML = `
+    <div class="kpi"><div class="t">Mês (${ym})</div><div class="v">${s.daysWorked} dias</div></div>
+    <div class="kpi"><div class="t">Horas trabalhadas</div><div class="v">${fmtMin(s.totalWorked)}</div></div>
+    <div class="kpi"><div class="t">Horas excedidas</div><div class="v">${fmtMin(s.totalOver)}</div></div>
+    <div class="kpi"><div class="t">R$ excedentes</div><div class="v">${fmtBRL(overPay)}</div></div>
+  `;
+}
+
+// ====== Pages ======
+let currentPageRenderer=null;
+
+function statusBadge(status){
+  if(status==="folga") return `<span class="badge"><span class="dot good"></span> Folga</span>`;
+  if(status==="ok") return `<span class="badge"><span class="dot good"></span> OK</span>`;
+  if(status==="exced") return `<span class="badge"><span class="dot warn"></span> Exced</span>`;
+  if(status==="incompleto") return `<span class="badge"><span class="dot bad"></span> Falta</span>`;
+  return `<span class="badge"><span class="dot"></span> —</span>`;
+}
+
+function readRowToEntry(tr, base){
+  const get = (k)=> tr.querySelector(`input[data-k="${k}"]`)?.value || "";
+  const in4 = get("in4");
+  const b1 = get("breakStart4");
+  const b2 = get("breakEnd4");
+  const out4 = get("out4");
+  const sched4 = get("sched4");
+
+  const schedMin = schedule4ToMin(sched4) ?? (base.scheduleMin ?? state.settings.defaultScheduleMin ?? 480);
+
+  return {
+    ...base,
+    in4, breakStart4:b1, breakEnd4:b2, out4,
+    inHHMM: hhmmFrom4digits(in4),
+    breakStartHHMM: hhmmFrom4digits(b1),
+    breakEndHHMM: hhmmFrom4digits(b2),
+    outHHMM: hhmmFrom4digits(out4),
+    scheduleMin: schedMin
+  };
+}
+
+async function ensureMonthLoadedForSelected(){
+  const empId = getSelectedEmployeeId();
+  if(!empId) return;
+  const ym = ymFromDate(nowISODate());
+  if(state.monthCache.empId===empId && state.monthCache.ym===ym) return;
+  await fetchMonthEntries(empId, ym);
+}
+
+// ====== Mês (Planilha) ======
+async function renderMesPlanilha(){
+  currentPageRenderer = renderMesPlanilha;
+
+  const empId=getSelectedEmployeeId();
+  if(!empId){
+    page.innerHTML = `<h2>📅 Mês (Planilha)</h2><p class="sub">Crie um funcionário para começar.</p>`;
+    return;
+  }
+
+  const ym=ymFromDate(nowISODate());
+  await ensureMonthLoadedForSelected();
+  const monthMap = state.monthCache.mapByDay || {};
+  const stats = monthStats(monthMap);
+  const overPay = calcOverPay(stats.totalOver);
+
+  page.innerHTML = `
+    <h2>📅 Mês (Planilha) — ${ym}</h2>
+    <p class="sub">Digite <span class="mono">0000</span> e use <b>Enter</b> pra ir pra direita. <b>↑/↓</b> muda de dia mantendo a coluna.</p>
+
+    <div class="row">
+      <span class="tag"><b>Total trabalhado:</b> <span class="mono">${fmtMin(stats.totalWorked)}</span></span>
+      <span class="tag"><b>Total excedido:</b> <span class="mono">${fmtMin(stats.totalOver)}</span></span>
+      <span class="tag"><b>R$ excedentes:</b> <span class="mono">${fmtBRL(overPay)}</span></span>
+      <span class="tag"><b>Pendências:</b> <span class="mono">${stats.incomplete}</span></span>
+      <span class="tag"><b>Folgas:</b> <span class="mono">${stats.folgas}</span></span>
+    </div>
+
+    <div class="sep"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Dia</th>
+          <th>Entrada</th>
+          <th>Int. Ini</th>
+          <th>Int. Fim</th>
+          <th>Saída</th>
+          <th>Jornada</th>
+          <th>Trabalhadas</th>
+          <th>Exced</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="monthBody"></tbody>
+    </table>
+  `;
+
+  const body = $("#monthBody");
+
+  function focusSameCol(tr, currentInput, dir){
+    const k = currentInput.getAttribute("data-k");
+    const targetRow = (dir === "up") ? tr.previousElementSibling : tr.nextElementSibling;
+    if(!targetRow) return;
+    const targetInput = targetRow.querySelector(`input[data-k="${k}"]`) || targetRow.querySelector("input");
+    if(targetInput) targetInput.focus();
+  }
+
+  async function saveAndUpdateRow(tr, day, baseEntry){
+    const updated = readRowToEntry(tr, baseEntry);
+    const dateISO = `${ym}-${pad2(day)}`;
+    await upsertEntry(empId, dateISO, updated);
+
+    const cc = calcWorkedAndOver(updated);
+    tr.querySelector('[data-out="worked"]').textContent = fmtMin(cc.workedMin);
+    tr.querySelector('[data-out="over"]').textContent = fmtMin(cc.overMin);
+    tr.querySelector('[data-out="status"]').innerHTML = statusBadge(cc.status);
+
+    refreshSidebarKPIs();
+    return updated;
+  }
+
+  for(let d=1; d<=31; d++){
+    const dateISO = `${ym}-${pad2(d)}`;
+    const eBase = monthMap[d] || defaultEntryFor(dateISO);
+    const e = { ...eBase, scheduleMin: (eBase.scheduleMin ?? state.settings.defaultScheduleMin ?? 480) };
+    const c = calcWorkedAndOver(e);
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${pad2(d)}</td>
+      <td><input class="tIn" data-k="in4" value="${e.in4||""}" placeholder="0700" maxlength="4"></td>
+      <td><input class="tIn small" data-k="breakStart4" value="${e.breakStart4||""}" placeholder="1100" maxlength="4"></td>
+      <td><input class="tIn small" data-k="breakEnd4" value="${e.breakEnd4||""}" placeholder="1300" maxlength="4"></td>
+      <td><input class="tIn" data-k="out4" value="${e.out4||""}" placeholder="1900" maxlength="4"></td>
+      <td><input class="tIn" data-k="sched4" value="${minTo4(e.scheduleMin)}" placeholder="0800" maxlength="4"></td>
+      <td class="mono" data-out="worked">${fmtMin(c.workedMin)}</td>
+      <td class="mono" data-out="over">${fmtMin(c.overMin)}</td>
+      <td data-out="status">${statusBadge(c.status)}</td>
+      <td>
+        <button class="btn tBtn" data-act="obs">📝 Obs</button>
+        <button class="btn tBtn danger" data-act="folga">${e.folga ? "✅ Folga" : "🏖️"}</button>
+      </td>
+    `;
+
+    tr.querySelectorAll("input").forEach(inp=>{
+      inp.addEventListener("input", ()=>{
+        inp.value = inp.value.replace(/[^\d]/g,"").slice(0,4);
+      });
+
+      inp.addEventListener("keydown", async (ev)=>{
+        const key = ev.key;
+
+        if(key === "Enter"){
+          ev.preventDefault();
+          const updated = await saveAndUpdateRow(tr, d, e);
+
+          const inputs = Array.from(tr.querySelectorAll("input"));
+          const idx = inputs.indexOf(inp);
+
+          if(idx < inputs.length - 1){
+            inputs[idx + 1].focus();
+          } else {
+            const nextRow = tr.nextElementSibling;
+            if(nextRow){
+              const nextInput = nextRow.querySelector('input[data-k="in4"]') || nextRow.querySelector("input");
+              if(nextInput) nextInput.focus();
+            }
+          }
+
+          Object.assign(e, updated);
+          return;
+        }
+
+        if(key === "ArrowDown"){
+          ev.preventDefault();
+          const updated = await saveAndUpdateRow(tr, d, e);
+          Object.assign(e, updated);
+          focusSameCol(tr, inp, "down");
+          return;
+        }
+
+        if(key === "ArrowUp"){
+          ev.preventDefault();
+          const updated = await saveAndUpdateRow(tr, d, e);
+          Object.assign(e, updated);
+          focusSameCol(tr, inp, "up");
+          return;
+        }
+      });
+
+      inp.addEventListener("blur", async ()=>{
+        try{
+          const updated = await saveAndUpdateRow(tr, d, e);
+          Object.assign(e, updated);
+        }catch(err){
+          showToast(err?.message || "Erro ao salvar.");
+        }
+      });
+    });
+
+    tr.querySelector('[data-act="obs"]').onclick = async ()=>{
+      const current = state.monthCache.mapByDay[d] || e;
+      const obs = prompt(`Obs do dia ${pad2(d)}:`, current.obs || "");
+      if(obs === null) return;
+      const updated = { ...current, obs };
+      try{
+        await upsertEntry(empId, dateISO, updated);
+        showToast("Obs salva.");
+      }catch(err){
+        showToast(err?.message || "Erro ao salvar obs.");
+      }
+    };
+
+    tr.querySelector('[data-act="folga"]').onclick = async ()=>{
+      const current = state.monthCache.mapByDay[d] || defaultEntryFor(dateISO);
+      const updated = { ...current, folga: !current.folga, scheduleMin: current.scheduleMin ?? state.settings.defaultScheduleMin ?? 480 };
+      try{
+        await upsertEntry(empId, dateISO, updated);
+
+        const cc = calcWorkedAndOver(updated);
+        tr.querySelector('[data-out="worked"]').textContent = fmtMin(cc.workedMin);
+        tr.querySelector('[data-out="over"]').textContent = fmtMin(cc.overMin);
+        tr.querySelector('[data-out="status"]').innerHTML = statusBadge(cc.status);
+        tr.querySelector('[data-act="folga"]').textContent = updated.folga ? "✅ Folga" : "🏖️";
+
+        refreshSidebarKPIs();
+        showToast(updated.folga ? "Marcado folga." : "Folga removida.");
+      }catch(err){
+        showToast(err?.message || "Erro ao salvar folga.");
+      }
+    };
+
+    body.appendChild(tr);
+  }
+
+  refreshSidebarKPIs();
+}
+
+// ====== Dia (Detalhe) ======
+async function renderPonto(prefDate = nowISODate()){
+  currentPageRenderer = ()=> renderPonto(prefDate);
+
+  const empId=getSelectedEmployeeId();
+  if(!empId){
+    page.innerHTML = `<h2>🕒 Dia</h2><p class="sub">Crie um funcionário para começar.</p>`;
+    return;
+  }
+
+  const ym=ymFromDate(prefDate);
+  const day=dayFromDate(prefDate);
+
+  if(state.monthCache.empId!==empId || state.monthCache.ym!==ym){
+    await fetchMonthEntries(empId, ym);
+  }
+  const existing = state.monthCache.mapByDay[day] || defaultEntryFor(prefDate);
+  const e = { ...existing, scheduleMin: existing.scheduleMin ?? (state.settings.defaultScheduleMin ?? 480) };
+
+  const c = calcWorkedAndOver(e);
+  const overPay = calcOverPay(c.overMin || 0);
+
+  page.innerHTML = `
+    <h2>🕒 Dia</h2>
+    <p class="sub">Modo rápido é “Mês (Planilha)”. Aqui é pra obs/folga/detalhe.</p>
+
+    <div class="row">
+      <div class="field" style="flex: 1 1 220px;">
+        <label>Data</label>
+        <input id="pDate" type="date" value="${prefDate}">
+      </div>
+      <div class="field">
+        <label>Entrada</label>
+        <input id="pIn" inputmode="numeric" maxlength="4" value="${e.in4||""}" placeholder="0700">
+        <div class="mono" style="opacity:.8;font-size:12px" id="pInHH">${e.inHHMM || "—"}</div>
+      </div>
+      <div class="field">
+        <label>Int. Ini</label>
+        <input id="pB1" inputmode="numeric" maxlength="4" value="${e.breakStart4||""}" placeholder="1100">
+        <div class="mono" style="opacity:.8;font-size:12px" id="pB1HH">${e.breakStartHHMM || "—"}</div>
+      </div>
+      <div class="field">
+        <label>Int. Fim</label>
+        <input id="pB2" inputmode="numeric" maxlength="4" value="${e.breakEnd4||""}" placeholder="1300">
+        <div class="mono" style="opacity:.8;font-size:12px" id="pB2HH">${e.breakEndHHMM || "—"}</div>
+      </div>
+      <div class="field">
+        <label>Saída</label>
+        <input id="pOut" inputmode="numeric" maxlength="4" value="${e.out4||""}" placeholder="1900">
+        <div class="mono" style="opacity:.8;font-size:12px" id="pOutHH">${e.outHHMM || "—"}</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="kpi" style="flex:1;">
+        <div class="t">Trabalhadas</div>
+        <div class="v mono" id="pWorked">${fmtMin(c.workedMin)}</div>
+      </div>
+      <div class="kpi" style="flex:1;">
+        <div class="t">Excedidas</div>
+        <div class="v mono" id="pOver">${fmtMin(c.overMin)}</div>
+      </div>
+      <div class="kpi" style="flex:1;">
+        <div class="t">R$ excedentes (dia)</div>
+        <div class="v mono" id="pOverPay">${fmtBRL(overPay)}</div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="row">
+      <div class="field" style="flex:1 1 520px;">
+        <label>Jornada do dia (0000)</label>
+        <input id="pSched" inputmode="numeric" maxlength="4" value="${minTo4(e.scheduleMin)}" placeholder="0800">
+      </div>
+      <div class="field" style="flex:1 1 520px;">
+        <label>Observações</label>
+        <textarea id="pObs" placeholder="Ex: sem intervalo / troca de turno...">${escapeHTML(e.obs||"")}</textarea>
+      </div>
+    </div>
+
+    <div class="row spread" style="margin-top:12px;">
+      <div class="row">
+        <button class="btn danger" id="pFolga">${e.folga ? "✅ Está como folga" : "🏖️ Marcar folga"}</button>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="pSave">💾 Salvar</button>
+      </div>
+    </div>
+  `;
+
+  const elDate=$("#pDate");
+  const elIn=$("#pIn");
+  const elB1=$("#pB1");
+  const elB2=$("#pB2");
+  const elOut=$("#pOut");
+  const elSched=$("#pSched");
+  const elObs=$("#pObs");
+
+  function clamp4(el){
+    el.value = el.value.replace(/[^\d]/g,"").slice(0,4);
+  }
+
+  function live(){
+    [elIn,elB1,elB2,elOut,elSched].forEach(clamp4);
+    const inHH=hhmmFrom4digits(elIn.value);
+    const b1HH=hhmmFrom4digits(elB1.value);
+    const b2HH=hhmmFrom4digits(elB2.value);
+    const outHH=hhmmFrom4digits(elOut.value);
+
+    $("#pInHH").textContent=inHH||"—";
+    $("#pB1HH").textContent=b1HH||"—";
+    $("#pB2HH").textContent=b2HH||"—";
+    $("#pOutHH").textContent=outHH||"—";
+
+    const tmp={
+      ...e,
+      in4:elIn.value, breakStart4:elB1.value, breakEnd4:elB2.value, out4:elOut.value,
+      inHHMM:inHH, breakStartHHMM:b1HH, breakEndHHMM:b2HH, outHHMM:outHH,
+      scheduleMin: schedule4ToMin(elSched.value) ?? e.scheduleMin
+    };
+    const cc=calcWorkedAndOver(tmp);
+    $("#pWorked").textContent=fmtMin(cc.workedMin);
+    $("#pOver").textContent=fmtMin(cc.overMin);
+    $("#pOverPay").textContent=fmtBRL(calcOverPay(cc.overMin||0));
+  }
+
+  elDate.onchange=()=> renderPonto(elDate.value);
+  [elIn,elB1,elB2,elOut,elSched].forEach(el=>el.oninput=live);
+
+  $("#pFolga").onclick= async ()=>{
+    const dateISO = prefDate;
+    const updated={...e, folga: !e.folga, obs: elObs.value||"", scheduleMin: schedule4ToMin(elSched.value) ?? e.scheduleMin };
+    try{
+      await upsertEntry(empId, dateISO, updated);
+      showToast(updated.folga ? "Dia marcado como folga." : "Folga removida.");
+      await renderPonto(prefDate);
+      refreshSidebarKPIs();
+    }catch(err){
+      showToast(err?.message || "Erro ao salvar folga.");
+    }
+  };
+
+  $("#pSave").onclick= async ()=>{
+    const dateISO = prefDate;
+    const inHH=hhmmFrom4digits(elIn.value);
+    const outHH=hhmmFrom4digits(elOut.value);
+    const schedMin = schedule4ToMin(elSched.value) ?? e.scheduleMin ?? (state.settings.defaultScheduleMin ?? 480);
+
+    const updated={
+      ...e,
+      date: dateISO,
+      in4: elIn.value,
+      breakStart4: elB1.value,
+      breakEnd4: elB2.value,
+      out4: elOut.value,
+      inHHMM: inHH,
+      breakStartHHMM: hhmmFrom4digits(elB1.value),
+      breakEndHHMM: hhmmFrom4digits(elB2.value),
+      outHHMM: outHH,
+      obs: elObs.value || "",
+      scheduleMin: schedMin
+    };
+    if(!updated.folga && (!inHH || !outHH)){
+      showToast("Preencha ENTRADA e SAÍDA (ou marque folga).");
+      return;
+    }
+    try{
+      await upsertEntry(empId, dateISO, updated);
+      showToast("Salvo!");
+      refreshSidebarKPIs();
+    }catch(err){
+      showToast(err?.message || "Erro ao salvar.");
+    }
+  };
+
+  live();
+  refreshSidebarKPIs();
+}
+
+// ====== Funcionários ======
+async function renderFuncionarios(){
+  currentPageRenderer = renderFuncionarios;
+  await fetchEmployees();
+
+  page.innerHTML = `
+    <h2>👥 Funcionários</h2>
+    <p class="sub">Cadastre, edite e alterne. Tudo fica salvo na nuvem.</p>
+    <div class="row"><button class="btn primary" id="fAdd">➕ Novo funcionário</button></div>
+    <div class="sep"></div>
+    <table>
+      <thead><tr><th>Nome</th><th>Cargo</th><th>ID</th><th>Ações</th></tr></thead>
+      <tbody>
+        ${state.employees.map(e=>{
+          const isSel = e.id===getSelectedEmployeeId();
+          return `
+            <tr>
+              <td><b>${escapeHTML(e.name)}</b> ${isSel?`<span class="tag">selecionado</span>`:""}</td>
+              <td>${escapeHTML(e.role||"—")}</td>
+              <td class="mono">${e.id.slice(0,8)}…</td>
+              <td>
+                <button class="btn" data-act="sel" data-id="${e.id}">✅ Selecionar</button>
+                <button class="btn" data-act="edit" data-id="${e.id}">✏️ Editar</button>
+                <button class="btn danger" data-act="del" data-id="${e.id}">🗑️ Excluir</button>
+              </td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+  $("#fAdd").onclick=()=>openEmployeeCreate();
+
+  page.querySelectorAll("button[data-act]").forEach(btn=>{
+    btn.onclick=async ()=>{
+      const act=btn.getAttribute("data-act");
+      const id=btn.getAttribute("data-id");
+      if(act==="sel"){
+        setSelectedEmployeeId(id);
+        showToast("Funcionário selecionado.");
+        await ensureMonthLoadedForSelected();
+        refreshSidebarKPIs();
+        renderEmployeeSelect();
+        await renderMesPlanilha();
+      }
+      if(act==="edit") await openEmployeeEdit(id);
+      if(act==="del"){
+        if(!confirm("Excluir funcionário e todos os dados dele?")) return;
+        try{
+          await deleteEmployee(id);
+          showToast("Excluído.");
+          await fetchEmployees();
+          renderEmployeeSelect();
+          await ensureMonthLoadedForSelected();
+          refreshSidebarKPIs();
+          await renderFuncionarios();
+        }catch(err){
+          showToast(err?.message || "Erro ao excluir.");
+        }
+      }
+    };
+  });
+
+  refreshSidebarKPIs();
+}
+
+async function openEmployeeCreate(){
+  const name = prompt("Nome do funcionário:");
+  if(!name) return;
+  const role = prompt("Cargo (opcional):") || "";
+  try{
+    const emp = await createEmployee(name.trim(), role.trim());
+    showToast("Funcionário criado.");
+    await fetchEmployees();
+    renderEmployeeSelect();
+    setSelectedEmployeeId(emp.id);
+    await ensureMonthLoadedForSelected();
+    refreshSidebarKPIs();
+    await renderMesPlanilha();
+  }catch(err){
+    showToast(err?.message || "Erro ao criar funcionário.");
+  }
+}
+async function openEmployeeEdit(id){
+  const emp=state.employees.find(e=>e.id===id);
+  if(!emp) return;
+  const name=prompt("Nome:", emp.name);
+  if(!name) return;
+  const role=prompt("Cargo (opcional):", emp.role||"") || "";
+  try{
+    await updateEmployee(id, name.trim(), role.trim());
+    showToast("Atualizado.");
+    await fetchEmployees();
+    renderEmployeeSelect();
+    refreshSidebarKPIs();
+    await renderFuncionarios();
+  }catch(err){
+    showToast(err?.message || "Erro ao atualizar.");
+  }
+}
+
+// ====== Export ======
+async function exportJSON(){
+  // exporta tudo do funcionário selecionado (employees+entries+settings)
+  try{
+    const empId = getSelectedEmployeeId();
+    if(!empId){ showToast("Selecione um funcionário."); return; }
+
+    const { data: emp, error: e1 } = await supabase.from("employees").select("*").eq("id", empId).single();
+    if(e1) throw e1;
+
+    const { data: entries, error: e2 } = await supabase.from("entries").select("*").eq("employee_id", empId);
+    if(e2) throw e2;
+
+    const { data: settings, error: e3 } = await supabase.from("settings").select("*").limit(1);
+    if(e3) throw e3;
+
+    const payload = { exportedAt: new Date().toISOString(), employee: emp, settings: settings?.[0] || null, entries: entries || [] };
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+    downloadBlob(blob, `pontopro_backup_${slug(emp.name||"funcionario")}_${nowISODate()}.json`);
+    showToast("JSON exportado.");
+  }catch(err){
+    showToast(err?.message || "Erro exportando JSON.");
+  }
+}
+
+async function exportCSV(){
+  try{
+    const empId=getSelectedEmployeeId();
+    if(!empId){ showToast("Selecione um funcionário."); return; }
+    const emp=state.employees.find(e=>e.id===empId);
+    const name=emp?.name || "funcionario";
+
+    const { data: entries, error } = await supabase.from("entries").select("*").eq("employee_id", empId).order("date", {ascending:true});
+    if(error) throw error;
+
+    const defaultMin = state.settings.defaultScheduleMin ?? 480;
+    const rows=[["Funcionario","Data","Entrada","IntInicio","IntFim","Saida","Jornada","Trabalhadas","Excedidas","R$ Exced","Folga","Obs"]];
+
+    for(const row of (entries||[])){
+      const entry = {
+        date: row.date,
+        in4: row.in4||"",
+        breakStart4: row.break_start4||"",
+        breakEnd4: row.break_end4||"",
+        out4: row.out4||"",
+        inHHMM: hhmmFrom4digits(row.in4||""),
+        breakStartHHMM: hhmmFrom4digits(row.break_start4||""),
+        breakEndHHMM: hhmmFrom4digits(row.break_end4||""),
+        outHHMM: hhmmFrom4digits(row.out4||""),
+        scheduleMin: row.schedule_min ?? defaultMin,
+        obs: row.obs||"",
+        folga: !!row.folga
+      };
+      const c=calcWorkedAndOver(entry);
+      const overPay = calcOverPay(c.overMin||0);
+
+      rows.push([
+        name,
+        row.date,
+        entry.inHHMM||"", entry.breakStartHHMM||"", entry.breakEndHHMM||"", entry.outHHMM||"",
+        fmtMin(entry.scheduleMin ?? defaultMin),
+        c.workedMin===null ? "" : fmtMin(c.workedMin),
+        c.overMin===null ? "" : fmtMin(c.overMin),
+        overPay ? (Math.round(overPay*100)/100).toString().replace(".",",") : "",
+        entry.folga ? "SIM":"NAO",
+        (entry.obs||"").replaceAll("\n"," ")
+      ]);
+    }
+
+    const csv = rows.map(r=>r.map(v=>{
+      const s=String(v??"");
+      if(/[",;\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+      return s;
+    }).join(";")).join("\n");
+
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+    downloadBlob(blob, `pontopro_${slug(name)}_${nowISODate()}.csv`);
+    showToast("CSV exportado.");
+  }catch(err){
+    showToast(err?.message || "Erro exportando CSV.");
+  }
+}
+
+function downloadBlob(blob, filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 6000);
+}
+
+// ====== Boot ======
+async function boot(){
+  state.session = await getSession();
+  if(!state.session){
+    loginModal.style.display = "flex";
+    loginStatus.textContent = "Aguardando login…";
+    return;
+  }
+  loginModal.style.display = "none";
+
+  try{
+    await loadSettings();
+    themeApply(state.theme || "dark");
+
+    await fetchEmployees();
+    if(state.employees.length===0){
+      // cria um padrão
+      const emp = await createEmployee("Funcionário 1", "");
+      state.employees = [emp];
+    }
+
+    renderEmployeeSelect();
+
+    // inputs settings
+    hourRateEl.value = (state.settings.hourRate ?? 0).toString().replace(".",",");
+    otMultEl.value = (state.settings.otMultiplier ?? 1.0).toString().replace(".",",");
+    defaultSchedEl.value = minTo4(state.settings.defaultScheduleMin ?? 480);
+
+    hourRateEl.addEventListener("change", async ()=>{
+      try{
+        const rate = parseMoneyBr(hourRateEl.value);
+        await saveSettingsToDB({ hourRate: rate });
+        showToast("Valor/hora salvo.");
+        refreshSidebarKPIs();
+      }catch(err){ showToast(err?.message || "Erro salvando valor/hora."); }
+    });
+    otMultEl.addEventListener("change", async ()=>{
+      try{
+        const mult = Math.max(parseFloatSafe(otMultEl.value) || 1.0, 0);
+        await saveSettingsToDB({ otMultiplier: mult });
+        showToast("Multiplicador salvo.");
+        refreshSidebarKPIs();
+      }catch(err){ showToast(err?.message || "Erro salvando multiplicador."); }
+    });
+
+    defaultSchedEl.addEventListener("input", ()=>{
+      defaultSchedEl.value = defaultSchedEl.value.replace(/[^\d]/g,"").slice(0,4);
+    });
+    defaultSchedEl.addEventListener("change", async ()=>{
+      try{
+        const mins = schedule4ToMin(defaultSchedEl.value) ?? 480;
+        await saveSettingsToDB({ defaultScheduleMin: mins });
+        showToast("Jornada padrão salva.");
+        // recarrega mês pra refletir padrão nos vazios
+        state.monthCache = { ym:null, empId:null, mapByDay:{} };
+        await renderMesPlanilha();
+      }catch(err){ showToast(err?.message || "Erro salvando jornada padrão."); }
+    });
+
+    btnApplySchedMonth.onclick = async ()=>{
+      try{
+        const empId = getSelectedEmployeeId();
+        if(!empId){ showToast("Selecione um funcionário."); return; }
+        const ym = ymFromDate(nowISODate());
+        const mins = schedule4ToMin(defaultSchedEl.value) ?? (state.settings.defaultScheduleMin ?? 480);
+        await setMonthSchedule(empId, ym, mins);
+        showToast("Jornada aplicada no mês.");
+        await renderMesPlanilha();
+        refreshSidebarKPIs();
+      }catch(err){ showToast(err?.message || "Erro aplicando jornada."); }
+    };
+
+    await ensureMonthLoadedForSelected();
+    refreshSidebarKPIs();
+    await renderMesPlanilha();
+  }catch(err){
+    // Erros comuns: key errada / RLS / tabelas não criadas
+    loginModal.style.display = "flex";
+    loginStatus.textContent = "Erro no setup ❌";
+    showToast("Erro: " + (err?.message || "verifique Supabase"));
+  }
+}
+
+// Reage a mudanças de sessão (ex: expiração)
+supabase.auth.onAuthStateChange(async (_event, session)=>{
+  state.session = session;
+  if(!session){
+    loginModal.style.display = "flex";
+  }else{
+    loginModal.style.display = "none";
+  }
+});
+
+boot();
+</script>
+</body>
+</html>
