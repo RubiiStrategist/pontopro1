@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PontoPro — Folha de Ponto (Nuvem)</title>
+  <title>PontoPro — Folha de Ponto (Local)</title>
   <style>
     :root{
       --bg:#0b1220;--panel:rgba(255,255,255,.06);--panel2:rgba(255,255,255,.09);
@@ -114,22 +114,12 @@
       font-size:13px;display:none;z-index:9999;max-width:92vw;backdrop-filter:blur(10px)
     }
     [data-theme="light"] .toast{background:rgba(255,255,255,.92);color:#101828;border-color:rgba(0,0,0,.12)}
-    .tIn{width:84px;padding:8px 10px;border-radius:12px;font-family:var(--mono);font-weight:700}
+    .tIn{
+      width:84px;padding:8px 10px;border-radius:12px;
+      font-family:var(--mono);font-weight:700
+    }
     .tIn.small{width:74px}
     .tBtn{padding:8px 10px;border-radius:12px}
-    /* login modal */
-    .modal{
-      position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9998;
-      background:rgba(0,0,0,.55);backdrop-filter:blur(10px);padding:18px
-    }
-    .modalCard{
-      width:min(560px, 96vw);
-      background:linear-gradient(180deg,var(--panel2),var(--panel));
-      border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);
-      padding:16px
-    }
-    .modalCard h3{margin:0 0 6px 0;font-size:16px}
-    .modalCard p{margin:0 0 12px 0;color:var(--muted);font-size:12px;line-height:1.4}
   </style>
 </head>
 <body>
@@ -138,16 +128,16 @@
       <div class="brand">
         <div class="logo" aria-hidden="true"></div>
         <div>
-          <h1>PontoPro <span class="pill">NUVEM</span></h1>
-          <p>Supabase • Login • Multi-funcionário • Enter navega • Setas sobem/descem</p>
+          <h1>PontoPro <span class="pill">LOCAL</span></h1>
+          <p>Multi-funcionário • Mês planilha • Enter navega • Setas sobem/descem • Jornada padrão</p>
         </div>
       </div>
+
       <div class="nav">
         <button class="btn ghost" id="btnPageMes">📅 Mês (Planilha)</button>
-        <button class="btn ghost" id="btnPagePonto">🕒 Dia</button>
+        <button class="btn ghost" id="btnPagePonto">🕒 Dia (detalhe)</button>
         <button class="btn ghost" id="btnPageFuncionarios">👥 Funcionários</button>
         <button class="btn" id="btnTheme">🌗 Tema</button>
-        <button class="btn danger" id="btnLogout">🚪 Sair</button>
       </div>
     </div>
 
@@ -156,7 +146,7 @@
 
       <div class="card" id="sidebar">
         <h2>Config + Resumo</h2>
-        <p class="sub">Tudo salva na nuvem. Exporta CSV/JSON quando quiser.</p>
+        <p class="sub">Tudo salva no aparelho (LocalStorage). Exporta CSV/JSON quando quiser.</p>
 
         <div class="row">
           <div class="field" style="flex:1 1 240px;">
@@ -195,6 +185,7 @@
         <div class="row">
           <button class="btn good" id="btnExportCSV">⬇️ Exportar CSV</button>
           <button class="btn" id="btnExportJSON">⬇️ Exportar JSON</button>
+          <button class="btn danger" id="btnResetAll">🧨 Zerar tudo</button>
         </div>
 
         <div class="sep"></div>
@@ -214,41 +205,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <div class="modal" id="loginModal">
-    <div class="modalCard">
-      <h3>Entrar no PontoPro</h3>
-      <p>Use seu e-mail e senha do Supabase (Authentication → Users). Depois disso, tudo fica salvo na nuvem.</p>
-      <div class="row">
-        <div class="field" style="flex:1 1 240px;">
-          <label>E-mail</label>
-          <input id="loginEmail" type="email" placeholder="seu@email.com" autocomplete="username">
-        </div>
-        <div class="field" style="flex:1 1 220px;">
-          <label>Senha</label>
-          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
-        </div>
-      </div>
-      <div class="row spread" style="margin-top:10px;">
-        <span class="pill" id="loginStatus">Aguardando login…</span>
-        <div class="row">
-          <button class="btn" id="btnLogin">🔐 Entrar</button>
-        </div>
-      </div>
-      <div class="sep"></div>
-      <p class="sub">
-        Se der erro de chave, confira se você colou a <b>anon/public key</b> do Supabase em Project Settings → API.
-      </p>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ====== SUPABASE (Rubian: suas chaves já coladas) ======
-const SUPABASE_URL = "https://jwtwfwuigeuqobkzygme.supabase.co";
-const SUPABASE_KEY = "sb_publishable__X5HK0wifMJCmDKA78m-8Q_vClrDhbk"; // se der erro, troque pela anon/public key
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ====== UI refs ======
+const LS_KEY = "PONTOPRO_V4";
 const $ = (s)=>document.querySelector(s);
 const app = $("#app");
 const page = $("#page");
@@ -259,10 +217,6 @@ const hourRateEl = $("#hourRate");
 const otMultEl = $("#otMult");
 const defaultSchedEl = $("#defaultSched");
 const btnApplySchedMonth = $("#btnApplySchedMonth");
-const loginModal = $("#loginModal");
-const loginEmail = $("#loginEmail");
-const loginPass = $("#loginPass");
-const loginStatus = $("#loginStatus");
 
 $("#btnPageMes").onclick = ()=> renderMesPlanilha();
 $("#btnPagePonto").onclick = ()=> renderPonto();
@@ -271,26 +225,7 @@ $("#btnTheme").onclick = ()=> toggleTheme();
 $("#btnNewEmployee").onclick = ()=> openEmployeeCreate();
 $("#btnExportCSV").onclick = ()=> exportCSV();
 $("#btnExportJSON").onclick = ()=> exportJSON();
-$("#btnLogout").onclick = ()=> doLogout();
-$("#btnLogin").onclick = ()=> doLogin();
-
-function showToast(msg){
-  toastEl.textContent = msg;
-  toastEl.style.display = "block";
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(()=>toastEl.style.display="none", 1600);
-}
-
-// ====== State cache (pra ficar rápido) ======
-const state = {
-  session: null,
-  theme: "dark",
-  settingsRowId: null,
-  settings: { hourRate: 0, otMultiplier: 1.0, defaultScheduleMin: 480 },
-  employees: [],
-  selectedEmpId: null,
-  monthCache: { ym: null, empId: null, mapByDay: {} }, // {day -> entry}
-};
+$("#btnResetAll").onclick = ()=> resetAll();
 
 function nowISODate(){
   const d=new Date();
@@ -300,15 +235,50 @@ function ymFromDate(dateStr){ return dateStr.slice(0,7); }
 function dayFromDate(dateStr){ return Number(dateStr.slice(8,10)); }
 function pad2(n){ return String(n).padStart(2,"0"); }
 
-// ====== Theme ======
-function themeApply(theme){ app.setAttribute("data-theme", theme); state.theme = theme; }
-function toggleTheme(){
-  themeApply(state.theme==="dark" ? "light" : "dark");
-  // opcional: salva no settings
-  saveSettingsToDB({ theme: state.theme }).catch(()=>{});
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.style.display = "block";
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>toastEl.style.display="none", 1600);
 }
 
-// ====== Parse / format ======
+function seedDB(){
+  return {
+    employees: [{ id: crypto.randomUUID(), name:"Funcionário 1", role:"", createdAt: Date.now() }],
+    entries: {},
+    settings: { theme:"dark", hourRate: 0, otMultiplier: 1.0, defaultScheduleMin: 480 }
+  };
+}
+function load(){
+  const raw = localStorage.getItem(LS_KEY);
+  if(!raw){
+    const db = seedDB();
+    localStorage.setItem(LS_KEY, JSON.stringify(db));
+    return db;
+  }
+  try{ return JSON.parse(raw); }
+  catch{
+    localStorage.removeItem(LS_KEY);
+    const db = seedDB();
+    localStorage.setItem(LS_KEY, JSON.stringify(db));
+    return db;
+  }
+}
+function save(db){ localStorage.setItem(LS_KEY, JSON.stringify(db)); }
+function getDB(){ return load(); }
+function setDB(mutator){
+  const db = load();
+  mutator(db);
+  save(db);
+  return db;
+}
+
+function themeApply(theme){ app.setAttribute("data-theme", theme); }
+function toggleTheme(){
+  const db=setDB(db=>{ db.settings.theme = (db.settings.theme==="dark") ? "light" : "dark"; });
+  themeApply(db.settings.theme);
+}
+
 function parseMoneyBr(v){
   if(v==null) return 0;
   const s = String(v).trim().replace(/\./g,"").replace(",",".");
@@ -324,6 +294,41 @@ function fmtBRL(n){
   try{ return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); }
   catch{ return "R$ " + (Math.round(n*100)/100).toFixed(2).replace(".",","); }
 }
+
+function ensureEmployeeEntries(db, empId){ if(!db.entries[empId]) db.entries[empId] = {}; }
+function ensureMonth(db, empId, ym){
+  ensureEmployeeEntries(db, empId);
+  if(!db.entries[empId][ym]) db.entries[empId][ym] = {};
+}
+function getSelectedEmployeeId(){ return employeeSelect.value; }
+function setSelectedEmployeeId(id){
+  employeeSelect.value = id;
+  localStorage.setItem("PONTOPRO_SELECTED_EMP", id);
+}
+function getPersistedSelectedEmployeeId(){ return localStorage.getItem("PONTOPRO_SELECTED_EMP"); }
+
+function renderEmployeeSelect(){
+  const db=getDB();
+  employeeSelect.innerHTML="";
+  db.employees.forEach(e=>{
+    const opt=document.createElement("option");
+    opt.value=e.id;
+    opt.textContent = e.name + (e.role?` — ${e.role}`:"");
+    employeeSelect.appendChild(opt);
+  });
+  const persisted = getPersistedSelectedEmployeeId();
+  const firstId = db.employees[0]?.id;
+  const target = persisted && db.employees.some(e=>e.id===persisted) ? persisted : firstId;
+  if(target) setSelectedEmployeeId(target);
+
+  employeeSelect.onchange=()=>{
+    setSelectedEmployeeId(employeeSelect.value);
+    refreshSidebarKPIs();
+    currentPageRenderer?.();
+  };
+}
+
+/* ===== horas ===== */
 function minutesFromHHMM(v){
   if(!v) return null;
   const [h,m]=v.split(":").map(Number);
@@ -359,15 +364,7 @@ function fmtMin(min){
   const h=Math.floor(min/60), m=min%60;
   return `${h}:${pad2(m)}`;
 }
-function escapeHTML(s){
-  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-}
-function slug(s){
-  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
-}
 
-// ====== Calc ======
 function calcWorkedAndOver(entry){
   if(entry?.folga) return {workedMin:0, overMin:0, status:"folga"};
   const tin=minutesFromHHMM(entry.inHHMM);
@@ -385,19 +382,17 @@ function calcWorkedAndOver(entry){
     if(br<0) br += 24*60;
   }
   const worked=Math.max(total-br,0);
-  const sched=Math.max(Number(entry.scheduleMin ?? state.settings.defaultScheduleMin ?? 480),0);
+  const sched=Math.max(Number(entry.scheduleMin ?? 480),0);
   const over=Math.max(worked-sched,0);
   return {workedMin:worked, overMin:over, status: over>0 ? "exced" : "ok"};
 }
-function calcOverPay(overMinutes){
-  const rate = Number(state.settings.hourRate ?? 0);
-  const mult = Number(state.settings.otMultiplier ?? 1.0);
-  const hours = (overMinutes||0) / 60;
-  return Math.max(hours * rate * mult, 0);
-}
-function monthStats(monthMap){
+
+function monthStats(empId, ym){
+  const db=getDB();
+  const month=db.entries?.[empId]?.[ym] || {};
   let daysWorked=0,totalWorked=0,totalOver=0,incomplete=0,folgas=0;
-  for(const entry of Object.values(monthMap || {})){
+
+  for(const entry of Object.values(month)){
     const c=calcWorkedAndOver(entry);
     if(c.status==="folga"){ folgas++; continue; }
     if(c.workedMin===null){ incomplete++; continue; }
@@ -406,245 +401,23 @@ function monthStats(monthMap){
   return {daysWorked,totalWorked,totalOver,incomplete,folgas};
 }
 
-// ====== Auth ======
-async function getSession(){
-  const { data } = await supabase.auth.getSession();
-  return data.session || null;
+function getRates(){
+  const db=getDB();
+  const rate = Number(db.settings.hourRate ?? 0);
+  const mult = Number(db.settings.otMultiplier ?? 1.0);
+  return { rate, mult };
 }
-async function doLogin(){
-  loginStatus.textContent = "Entrando…";
-  try{
-    const email = (loginEmail.value || "").trim();
-    const password = loginPass.value || "";
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if(error) throw error;
-    loginStatus.textContent = "Logado ✅";
-    showToast("Bem-vindo!");
-    await boot();
-  }catch(err){
-    loginStatus.textContent = "Erro no login ❌";
-    showToast(err?.message || "Erro no login.");
-  }
-}
-async function doLogout(){
-  await supabase.auth.signOut();
-  state.session = null;
-  loginModal.style.display = "flex";
-  showToast("Saiu.");
-}
-
-// ====== DB: settings ======
-async function loadSettings(){
-  // tenta pegar 1ª linha de settings
-  const { data, error } = await supabase.from("settings").select("*").limit(1);
-  if(error) throw error;
-  const row = data?.[0];
-  if(row){
-    state.settingsRowId = row.id;
-    state.settings.hourRate = Number(row.hour_rate ?? row.hourRate ?? 0);
-    state.settings.otMultiplier = Number(row.ot_multiplier ?? row.otMultiplier ?? 1.0);
-    state.settings.defaultScheduleMin = Number(row.default_schedule_min ?? row.defaultScheduleMin ?? 480);
-    if(row.theme) state.theme = row.theme;
-  }else{
-    // cria uma linha
-    const ins = await supabase.from("settings").insert({
-      hour_rate: 0, ot_multiplier: 1.0, default_schedule_min: 480, theme: "dark"
-    }).select("id").single();
-    if(ins.error) throw ins.error;
-    state.settingsRowId = ins.data.id;
-  }
-}
-async function saveSettingsToDB(partial){
-  if(!state.settingsRowId) return;
-  const payload = {};
-  if(partial.hourRate!==undefined){ payload.hour_rate = partial.hourRate; state.settings.hourRate = partial.hourRate; }
-  if(partial.otMultiplier!==undefined){ payload.ot_multiplier = partial.otMultiplier; state.settings.otMultiplier = partial.otMultiplier; }
-  if(partial.defaultScheduleMin!==undefined){ payload.default_schedule_min = partial.defaultScheduleMin; state.settings.defaultScheduleMin = partial.defaultScheduleMin; }
-  if(partial.theme!==undefined){ payload.theme = partial.theme; state.theme = partial.theme; }
-  if(Object.keys(payload).length===0) return;
-  payload.updated_at = new Date().toISOString();
-  const { error } = await supabase.from("settings").update(payload).eq("id", state.settingsRowId);
-  if(error) throw error;
-}
-
-// ====== DB: employees ======
-async function fetchEmployees(){
-  const { data, error } = await supabase.from("employees").select("*").order("created_at", {ascending:true});
-  if(error) throw error;
-  state.employees = (data || []).map(r=>({
-    id: r.id, name: r.name, role: r.role || "", active: r.active !== false, createdAt: r.created_at
-  })).filter(e=>e.active!==false);
-}
-async function createEmployee(name, role){
-  const { data, error } = await supabase.from("employees")
-    .insert({ name, role, active:true })
-    .select("*").single();
-  if(error) throw error;
-  return { id:data.id, name:data.name, role:data.role||"", active:true, createdAt:data.created_at };
-}
-async function updateEmployee(id, name, role){
-  const { error } = await supabase.from("employees").update({ name, role }).eq("id", id);
-  if(error) throw error;
-}
-async function deleteEmployee(id){
-  // delete cascade entries
-  const { error } = await supabase.from("employees").delete().eq("id", id);
-  if(error) throw error;
-}
-
-// ====== DB: entries ======
-function defaultEntryFor(date){
-  return {
-    date,
-    in4:"", breakStart4:"", breakEnd4:"", out4:"",
-    inHHMM:"", breakStartHHMM:"", breakEndHHMM:"", outHHMM:"",
-    scheduleMin: state.settings.defaultScheduleMin ?? 480,
-    obs:"",
-    folga:false
-  };
-}
-async function fetchMonthEntries(empId, ym){
-  const start = `${ym}-01`;
-  const end = `${ym}-31`;
-  const { data, error } = await supabase.from("entries")
-    .select("*")
-    .eq("employee_id", empId)
-    .gte("date", start)
-    .lte("date", end);
-  if(error) throw error;
-
-  const map = {};
-  for(const row of (data||[])){
-    const d = Number(String(row.date).slice(8,10));
-    map[d] = {
-      date: row.date,
-      in4: row.in4 || "",
-      breakStart4: row.break_start4 || "",
-      breakEnd4: row.break_end4 || "",
-      out4: row.out4 || "",
-      inHHMM: hhmmFrom4digits(row.in4 || ""),
-      breakStartHHMM: hhmmFrom4digits(row.break_start4 || ""),
-      breakEndHHMM: hhmmFrom4digits(row.break_end4 || ""),
-      outHHMM: hhmmFrom4digits(row.out4 || ""),
-      scheduleMin: row.schedule_min ?? (state.settings.defaultScheduleMin ?? 480),
-      obs: row.obs || "",
-      folga: !!row.folga,
-    };
-  }
-  state.monthCache = { ym, empId, mapByDay: map };
-  return map;
-}
-async function upsertEntry(empId, dateISO, entry){
-  const payload = {
-    employee_id: empId,
-    date: dateISO,
-    in4: entry.in4 || null,
-    break_start4: entry.breakStart4 || null,
-    break_end4: entry.breakEnd4 || null,
-    out4: entry.out4 || null,
-    schedule_min: entry.scheduleMin ?? (state.settings.defaultScheduleMin ?? 480),
-    folga: !!entry.folga,
-    obs: entry.obs || null,
-    updated_at: new Date().toISOString(),
-  };
-  const { error } = await supabase.from("entries").upsert(payload, { onConflict: "employee_id,date" });
-  if(error) throw error;
-
-  // atualiza cache
-  const d = Number(dateISO.slice(8,10));
-  const cached = {
-    date: dateISO,
-    in4: entry.in4||"",
-    breakStart4: entry.breakStart4||"",
-    breakEnd4: entry.breakEnd4||"",
-    out4: entry.out4||"",
-    inHHMM: hhmmFrom4digits(entry.in4||""),
-    breakStartHHMM: hhmmFrom4digits(entry.breakStart4||""),
-    breakEndHHMM: hhmmFrom4digits(entry.breakEnd4||""),
-    outHHMM: hhmmFrom4digits(entry.out4||""),
-    scheduleMin: payload.schedule_min,
-    obs: entry.obs||"",
-    folga: !!entry.folga,
-  };
-  if(state.monthCache.empId===empId && state.monthCache.ym===ymFromDate(dateISO)){
-    state.monthCache.mapByDay[d] = cached;
-  }
-}
-async function setMonthSchedule(empId, ym, scheduleMin){
-  // upsert 31 dias com schedule_min (mantendo outros campos)
-  // pega mês atual cacheado pra usar valores existentes
-  let monthMap = (state.monthCache.empId===empId && state.monthCache.ym===ym) ? state.monthCache.mapByDay : await fetchMonthEntries(empId, ym);
-
-  const rows = [];
-  for(let d=1; d<=31; d++){
-    const dateISO = `${ym}-${pad2(d)}`;
-    const existing = monthMap[d] || defaultEntryFor(dateISO);
-    rows.push({
-      employee_id: empId,
-      date: dateISO,
-      schedule_min: scheduleMin,
-      in4: existing.in4 || null,
-      break_start4: existing.breakStart4 || null,
-      break_end4: existing.breakEnd4 || null,
-      out4: existing.out4 || null,
-      folga: !!existing.folga,
-      obs: existing.obs || null,
-      updated_at: new Date().toISOString()
-    });
-  }
-  const { error } = await supabase.from("entries").upsert(rows, { onConflict: "employee_id,date" });
-  if(error) throw error;
-
-  // atualiza cache
-  for(let d=1; d<=31; d++){
-    const dateISO = `${ym}-${pad2(d)}`;
-    const existing = monthMap[d] || defaultEntryFor(dateISO);
-    monthMap[d] = {
-      ...existing,
-      date: dateISO,
-      scheduleMin: scheduleMin
-    };
-  }
-  state.monthCache = { ym, empId, mapByDay: monthMap };
-}
-
-// ====== Sidebar ======
-function getSelectedEmployeeId(){ return state.selectedEmpId; }
-function setSelectedEmployeeId(id){
-  state.selectedEmpId = id;
-  localStorage.setItem("PONTOPRO_SELECTED_EMP", id);
-  employeeSelect.value = id;
-}
-function getPersistedSelectedEmployeeId(){ return localStorage.getItem("PONTOPRO_SELECTED_EMP"); }
-
-function renderEmployeeSelect(){
-  employeeSelect.innerHTML="";
-  state.employees.forEach(e=>{
-    const opt=document.createElement("option");
-    opt.value=e.id;
-    opt.textContent = e.name + (e.role?` — ${e.role}`:"");
-    employeeSelect.appendChild(opt);
-  });
-
-  const persisted = getPersistedSelectedEmployeeId();
-  const firstId = state.employees[0]?.id;
-  const target = persisted && state.employees.some(e=>e.id===persisted) ? persisted : firstId;
-  if(target) setSelectedEmployeeId(target);
-
-  employeeSelect.onchange = async ()=>{
-    setSelectedEmployeeId(employeeSelect.value);
-    await ensureMonthLoadedForSelected();
-    refreshSidebarKPIs();
-    currentPageRenderer?.();
-  };
+function calcOverPay(overMinutes){
+  const {rate, mult}=getRates();
+  const hours = (overMinutes||0) / 60;
+  return Math.max(hours * rate * mult, 0);
 }
 
 function refreshSidebarKPIs(){
   const empId=getSelectedEmployeeId();
   if(!empId) return;
   const ym=ymFromDate(nowISODate());
-  const map = (state.monthCache.empId===empId && state.monthCache.ym===ym) ? state.monthCache.mapByDay : {};
-  const s=monthStats(map);
+  const s=monthStats(empId, ym);
   const overPay = calcOverPay(s.totalOver);
 
   kpis.innerHTML = `
@@ -655,7 +428,7 @@ function refreshSidebarKPIs(){
   `;
 }
 
-// ====== Pages ======
+/* ===== Pages ===== */
 let currentPageRenderer=null;
 
 function statusBadge(status){
@@ -666,7 +439,18 @@ function statusBadge(status){
   return `<span class="badge"><span class="dot"></span> —</span>`;
 }
 
-function readRowToEntry(tr, base){
+function defaultEntryFor(date){
+  return {
+    date,
+    in4:"", breakStart4:"", breakEnd4:"", out4:"",
+    inHHMM:"", breakStartHHMM:"", breakEndHHMM:"", outHHMM:"",
+    scheduleMin:undefined,
+    obs:"",
+    folga:false
+  };
+}
+
+function readRowToEntry(tr, base, defaultMin){
   const get = (k)=> tr.querySelector(`input[data-k="${k}"]`)?.value || "";
   const in4 = get("in4");
   const b1 = get("breakStart4");
@@ -674,29 +458,42 @@ function readRowToEntry(tr, base){
   const out4 = get("out4");
   const sched4 = get("sched4");
 
-  const schedMin = schedule4ToMin(sched4) ?? (base.scheduleMin ?? state.settings.defaultScheduleMin ?? 480);
+  const inHH = hhmmFrom4digits(in4);
+  const b1HH = hhmmFrom4digits(b1);
+  const b2HH = hhmmFrom4digits(b2);
+  const outHH = hhmmFrom4digits(out4);
+  const schedMin = schedule4ToMin(sched4) ?? (base.scheduleMin ?? defaultMin ?? 480);
 
   return {
     ...base,
     in4, breakStart4:b1, breakEnd4:b2, out4,
-    inHHMM: hhmmFrom4digits(in4),
-    breakStartHHMM: hhmmFrom4digits(b1),
-    breakEndHHMM: hhmmFrom4digits(b2),
-    outHHMM: hhmmFrom4digits(out4),
+    inHHMM: inHH,
+    breakStartHHMM: b1HH,
+    breakEndHHMM: b2HH,
+    outHHMM: outHH,
     scheduleMin: schedMin
   };
 }
 
-async function ensureMonthLoadedForSelected(){
-  const empId = getSelectedEmployeeId();
-  if(!empId) return;
-  const ym = ymFromDate(nowISODate());
-  if(state.monthCache.empId===empId && state.monthCache.ym===ym) return;
-  await fetchMonthEntries(empId, ym);
+/* ===== Store ===== */
+function setEntry(empId, ym, day, entry){
+  setDB(db=>{
+    ensureMonth(db, empId, ym);
+    db.entries[empId][ym][day]=entry;
+  });
+}
+function getEntry(empId, ym, day){
+  const db=getDB();
+  return db.entries?.[empId]?.[ym]?.[day] || null;
+}
+function removeEntry(empId, ym, day){
+  setDB(db=>{
+    if(db.entries?.[empId]?.[ym]?.[day]) delete db.entries[empId][ym][day];
+  });
 }
 
-// ====== Mês (Planilha) ======
-async function renderMesPlanilha(){
+/* ===== MÊS (PLANILHA) ===== */
+function renderMesPlanilha(){
   currentPageRenderer = renderMesPlanilha;
 
   const empId=getSelectedEmployeeId();
@@ -706,9 +503,11 @@ async function renderMesPlanilha(){
   }
 
   const ym=ymFromDate(nowISODate());
-  await ensureMonthLoadedForSelected();
-  const monthMap = state.monthCache.mapByDay || {};
-  const stats = monthStats(monthMap);
+  const db=getDB();
+  const month=db.entries?.[empId]?.[ym] || {};
+  const defaultMin = db.settings.defaultScheduleMin ?? 480;
+
+  const stats = monthStats(empId, ym);
   const overPay = calcOverPay(stats.totalOver);
 
   page.innerHTML = `
@@ -746,18 +545,9 @@ async function renderMesPlanilha(){
 
   const body = $("#monthBody");
 
-  function focusSameCol(tr, currentInput, dir){
-    const k = currentInput.getAttribute("data-k");
-    const targetRow = (dir === "up") ? tr.previousElementSibling : tr.nextElementSibling;
-    if(!targetRow) return;
-    const targetInput = targetRow.querySelector(`input[data-k="${k}"]`) || targetRow.querySelector("input");
-    if(targetInput) targetInput.focus();
-  }
-
-  async function saveAndUpdateRow(tr, day, baseEntry){
-    const updated = readRowToEntry(tr, baseEntry);
-    const dateISO = `${ym}-${pad2(day)}`;
-    await upsertEntry(empId, dateISO, updated);
+  function saveAndUpdateRow(tr, day, baseEntry){
+    const updated = readRowToEntry(tr, baseEntry, defaultMin);
+    setEntry(empId, ym, day, updated);
 
     const cc = calcWorkedAndOver(updated);
     tr.querySelector('[data-out="worked"]').textContent = fmtMin(cc.workedMin);
@@ -768,10 +558,17 @@ async function renderMesPlanilha(){
     return updated;
   }
 
+  function focusSameCol(tr, currentInput, dir){
+    const k = currentInput.getAttribute("data-k");
+    const targetRow = (dir === "up") ? tr.previousElementSibling : tr.nextElementSibling;
+    if(!targetRow) return;
+    const targetInput = targetRow.querySelector(`input[data-k="${k}"]`) || targetRow.querySelector("input");
+    if(targetInput) targetInput.focus();
+  }
+
   for(let d=1; d<=31; d++){
-    const dateISO = `${ym}-${pad2(d)}`;
-    const eBase = monthMap[d] || defaultEntryFor(dateISO);
-    const e = { ...eBase, scheduleMin: (eBase.scheduleMin ?? state.settings.defaultScheduleMin ?? 480) };
+    const eBase = month[d] || defaultEntryFor(`${ym}-${pad2(d)}`);
+    const e = { ...eBase, scheduleMin: (eBase.scheduleMin ?? defaultMin) };
     const c = calcWorkedAndOver(e);
 
     const tr = document.createElement("tr");
@@ -781,7 +578,7 @@ async function renderMesPlanilha(){
       <td><input class="tIn small" data-k="breakStart4" value="${e.breakStart4||""}" placeholder="1100" maxlength="4"></td>
       <td><input class="tIn small" data-k="breakEnd4" value="${e.breakEnd4||""}" placeholder="1300" maxlength="4"></td>
       <td><input class="tIn" data-k="out4" value="${e.out4||""}" placeholder="1900" maxlength="4"></td>
-      <td><input class="tIn" data-k="sched4" value="${minTo4(e.scheduleMin)}" placeholder="0800" maxlength="4"></td>
+      <td><input class="tIn" data-k="sched4" value="${minTo4(e.scheduleMin ?? defaultMin)}" placeholder="0800" maxlength="4"></td>
       <td class="mono" data-out="worked">${fmtMin(c.workedMin)}</td>
       <td class="mono" data-out="over">${fmtMin(c.overMin)}</td>
       <td data-out="status">${statusBadge(c.status)}</td>
@@ -796,12 +593,12 @@ async function renderMesPlanilha(){
         inp.value = inp.value.replace(/[^\d]/g,"").slice(0,4);
       });
 
-      inp.addEventListener("keydown", async (ev)=>{
+      inp.addEventListener("keydown", (ev)=>{
         const key = ev.key;
 
         if(key === "Enter"){
           ev.preventDefault();
-          const updated = await saveAndUpdateRow(tr, d, e);
+          const updated = saveAndUpdateRow(tr, d, e);
 
           const inputs = Array.from(tr.querySelectorAll("input"));
           const idx = inputs.indexOf(inp);
@@ -822,7 +619,7 @@ async function renderMesPlanilha(){
 
         if(key === "ArrowDown"){
           ev.preventDefault();
-          const updated = await saveAndUpdateRow(tr, d, e);
+          const updated = saveAndUpdateRow(tr, d, e);
           Object.assign(e, updated);
           focusSameCol(tr, inp, "down");
           return;
@@ -830,53 +627,49 @@ async function renderMesPlanilha(){
 
         if(key === "ArrowUp"){
           ev.preventDefault();
-          const updated = await saveAndUpdateRow(tr, d, e);
+          const updated = saveAndUpdateRow(tr, d, e);
           Object.assign(e, updated);
           focusSameCol(tr, inp, "up");
           return;
         }
       });
 
-      inp.addEventListener("blur", async ()=>{
-        try{
-          const updated = await saveAndUpdateRow(tr, d, e);
-          Object.assign(e, updated);
-        }catch(err){
-          showToast(err?.message || "Erro ao salvar.");
-        }
+      inp.addEventListener("blur", ()=>{
+        const updated = saveAndUpdateRow(tr, d, e);
+        Object.assign(e, updated);
       });
     });
 
-    tr.querySelector('[data-act="obs"]').onclick = async ()=>{
-      const current = state.monthCache.mapByDay[d] || e;
+    tr.querySelector('[data-act="obs"]').onclick = ()=>{
+      const current = getEntry(empId, ym, d) || e;
       const obs = prompt(`Obs do dia ${pad2(d)}:`, current.obs || "");
       if(obs === null) return;
-      const updated = { ...current, obs };
-      try{
-        await upsertEntry(empId, dateISO, updated);
-        showToast("Obs salva.");
-      }catch(err){
-        showToast(err?.message || "Erro ao salvar obs.");
-      }
+      const updated = {...current, obs: obs};
+      setEntry(empId, ym, d, updated);
+      showToast("Obs salva.");
     };
 
-    tr.querySelector('[data-act="folga"]').onclick = async ()=>{
-      const current = state.monthCache.mapByDay[d] || defaultEntryFor(dateISO);
-      const updated = { ...current, folga: !current.folga, scheduleMin: current.scheduleMin ?? state.settings.defaultScheduleMin ?? 480 };
-      try{
-        await upsertEntry(empId, dateISO, updated);
+    tr.querySelector('[data-act="folga"]').onclick = ()=>{
+      const current = getEntry(empId, ym, d) || defaultEntryFor(`${ym}-${pad2(d)}`);
+      const dbNow = getDB();
+      const dMin = dbNow.settings.defaultScheduleMin ?? 480;
 
-        const cc = calcWorkedAndOver(updated);
-        tr.querySelector('[data-out="worked"]').textContent = fmtMin(cc.workedMin);
-        tr.querySelector('[data-out="over"]').textContent = fmtMin(cc.overMin);
-        tr.querySelector('[data-out="status"]').innerHTML = statusBadge(cc.status);
-        tr.querySelector('[data-act="folga"]').textContent = updated.folga ? "✅ Folga" : "🏖️";
+      const updated = {
+        ...current,
+        scheduleMin: current.scheduleMin ?? dMin,
+        folga: !current.folga
+      };
 
-        refreshSidebarKPIs();
-        showToast(updated.folga ? "Marcado folga." : "Folga removida.");
-      }catch(err){
-        showToast(err?.message || "Erro ao salvar folga.");
-      }
+      setEntry(empId, ym, d, updated);
+
+      const cc = calcWorkedAndOver(updated);
+      tr.querySelector('[data-out="worked"]').textContent = fmtMin(cc.workedMin);
+      tr.querySelector('[data-out="over"]').textContent = fmtMin(cc.overMin);
+      tr.querySelector('[data-out="status"]').innerHTML = statusBadge(cc.status);
+      tr.querySelector('[data-act="folga"]').textContent = updated.folga ? "✅ Folga" : "🏖️";
+
+      refreshSidebarKPIs();
+      showToast(updated.folga ? "Marcado folga." : "Folga removida.");
     };
 
     body.appendChild(tr);
@@ -885,31 +678,28 @@ async function renderMesPlanilha(){
   refreshSidebarKPIs();
 }
 
-// ====== Dia (Detalhe) ======
-async function renderPonto(prefDate = nowISODate()){
+/* ===== DIA (DETALHE) ===== */
+function renderPonto(prefDate = nowISODate()){
   currentPageRenderer = ()=> renderPonto(prefDate);
 
   const empId=getSelectedEmployeeId();
   if(!empId){
-    page.innerHTML = `<h2>🕒 Dia</h2><p class="sub">Crie um funcionário para começar.</p>`;
+    page.innerHTML = `<h2>🕒 Dia (detalhe)</h2><p class="sub">Crie um funcionário para começar.</p>`;
     return;
   }
 
   const ym=ymFromDate(prefDate);
   const day=dayFromDate(prefDate);
+  const db=getDB();
+  const defaultMin = db.settings.defaultScheduleMin ?? 480;
 
-  if(state.monthCache.empId!==empId || state.monthCache.ym!==ym){
-    await fetchMonthEntries(empId, ym);
-  }
-  const existing = state.monthCache.mapByDay[day] || defaultEntryFor(prefDate);
-  const e = { ...existing, scheduleMin: existing.scheduleMin ?? (state.settings.defaultScheduleMin ?? 480) };
-
+  const e = getEntry(empId, ym, day) || { ...defaultEntryFor(prefDate), scheduleMin: defaultMin };
   const c = calcWorkedAndOver(e);
   const overPay = calcOverPay(c.overMin || 0);
 
   page.innerHTML = `
-    <h2>🕒 Dia</h2>
-    <p class="sub">Modo rápido é “Mês (Planilha)”. Aqui é pra obs/folga/detalhe.</p>
+    <h2>🕒 Dia (detalhe)</h2>
+    <p class="sub">Modo rápido é “Mês (Planilha)”. Aqui é pra detalhe/obs.</p>
 
     <div class="row">
       <div class="field" style="flex: 1 1 220px;">
@@ -920,16 +710,6 @@ async function renderPonto(prefDate = nowISODate()){
         <label>Entrada</label>
         <input id="pIn" inputmode="numeric" maxlength="4" value="${e.in4||""}" placeholder="0700">
         <div class="mono" style="opacity:.8;font-size:12px" id="pInHH">${e.inHHMM || "—"}</div>
-      </div>
-      <div class="field">
-        <label>Int. Ini</label>
-        <input id="pB1" inputmode="numeric" maxlength="4" value="${e.breakStart4||""}" placeholder="1100">
-        <div class="mono" style="opacity:.8;font-size:12px" id="pB1HH">${e.breakStartHHMM || "—"}</div>
-      </div>
-      <div class="field">
-        <label>Int. Fim</label>
-        <input id="pB2" inputmode="numeric" maxlength="4" value="${e.breakEnd4||""}" placeholder="1300">
-        <div class="mono" style="opacity:.8;font-size:12px" id="pB2HH">${e.breakEndHHMM || "—"}</div>
       </div>
       <div class="field">
         <label>Saída</label>
@@ -957,10 +737,6 @@ async function renderPonto(prefDate = nowISODate()){
 
     <div class="row">
       <div class="field" style="flex:1 1 520px;">
-        <label>Jornada do dia (0000)</label>
-        <input id="pSched" inputmode="numeric" maxlength="4" value="${minTo4(e.scheduleMin)}" placeholder="0800">
-      </div>
-      <div class="field" style="flex:1 1 520px;">
         <label>Observações</label>
         <textarea id="pObs" placeholder="Ex: sem intervalo / troca de turno...">${escapeHTML(e.obs||"")}</textarea>
       </div>
@@ -969,43 +745,29 @@ async function renderPonto(prefDate = nowISODate()){
     <div class="row spread" style="margin-top:12px;">
       <div class="row">
         <button class="btn danger" id="pFolga">${e.folga ? "✅ Está como folga" : "🏖️ Marcar folga"}</button>
+        <button class="btn" id="pClear">🧼 Limpar dia</button>
       </div>
       <div class="row">
-        <button class="btn primary" id="pSave">💾 Salvar</button>
+        <button class="btn primary" id="pSave">💾 Salvar dia</button>
       </div>
     </div>
   `;
 
   const elDate=$("#pDate");
   const elIn=$("#pIn");
-  const elB1=$("#pB1");
-  const elB2=$("#pB2");
   const elOut=$("#pOut");
-  const elSched=$("#pSched");
   const elObs=$("#pObs");
 
-  function clamp4(el){
-    el.value = el.value.replace(/[^\d]/g,"").slice(0,4);
-  }
-
   function live(){
-    [elIn,elB1,elB2,elOut,elSched].forEach(clamp4);
-    const inHH=hhmmFrom4digits(elIn.value);
-    const b1HH=hhmmFrom4digits(elB1.value);
-    const b2HH=hhmmFrom4digits(elB2.value);
-    const outHH=hhmmFrom4digits(elOut.value);
+    elIn.value = elIn.value.replace(/[^\d]/g,"").slice(0,4);
+    elOut.value = elOut.value.replace(/[^\d]/g,"").slice(0,4);
 
+    const inHH=hhmmFrom4digits(elIn.value);
+    const outHH=hhmmFrom4digits(elOut.value);
     $("#pInHH").textContent=inHH||"—";
-    $("#pB1HH").textContent=b1HH||"—";
-    $("#pB2HH").textContent=b2HH||"—";
     $("#pOutHH").textContent=outHH||"—";
 
-    const tmp={
-      ...e,
-      in4:elIn.value, breakStart4:elB1.value, breakEnd4:elB2.value, out4:elOut.value,
-      inHHMM:inHH, breakStartHHMM:b1HH, breakEndHHMM:b2HH, outHHMM:outHH,
-      scheduleMin: schedule4ToMin(elSched.value) ?? e.scheduleMin
-    };
+    const tmp={...e, in4:elIn.value,out4:elOut.value,inHHMM:inHH,outHHMM:outHH};
     const cc=calcWorkedAndOver(tmp);
     $("#pWorked").textContent=fmtMin(cc.workedMin);
     $("#pOver").textContent=fmtMin(cc.overMin);
@@ -1013,72 +775,66 @@ async function renderPonto(prefDate = nowISODate()){
   }
 
   elDate.onchange=()=> renderPonto(elDate.value);
-  [elIn,elB1,elB2,elOut,elSched].forEach(el=>el.oninput=live);
+  elIn.oninput=live; elOut.oninput=live;
 
-  $("#pFolga").onclick= async ()=>{
-    const dateISO = prefDate;
-    const updated={...e, folga: !e.folga, obs: elObs.value||"", scheduleMin: schedule4ToMin(elSched.value) ?? e.scheduleMin };
-    try{
-      await upsertEntry(empId, dateISO, updated);
-      showToast(updated.folga ? "Dia marcado como folga." : "Folga removida.");
-      await renderPonto(prefDate);
-      refreshSidebarKPIs();
-    }catch(err){
-      showToast(err?.message || "Erro ao salvar folga.");
-    }
+  $("#pFolga").onclick=()=>{
+    const current = getEntry(empId, ym, day) || { ...defaultEntryFor(prefDate), scheduleMin: defaultMin };
+    const updated={...current, folga: !current.folga, scheduleMin: current.scheduleMin ?? defaultMin };
+    setEntry(empId, ym, day, updated);
+    showToast(updated.folga ? "Dia marcado como folga." : "Folga removida.");
+    renderPonto(prefDate);
+    refreshSidebarKPIs();
   };
 
-  $("#pSave").onclick= async ()=>{
-    const dateISO = prefDate;
+  $("#pClear").onclick=()=>{
+    if(!confirm("Limpar os dados deste dia?")) return;
+    removeEntry(empId, ym, day);
+    showToast("Dia limpo.");
+    renderPonto(prefDate);
+    refreshSidebarKPIs();
+  };
+
+  $("#pSave").onclick=()=>{
     const inHH=hhmmFrom4digits(elIn.value);
     const outHH=hhmmFrom4digits(elOut.value);
-    const schedMin = schedule4ToMin(elSched.value) ?? e.scheduleMin ?? (state.settings.defaultScheduleMin ?? 480);
-
-    const updated={
-      ...e,
-      date: dateISO,
-      in4: elIn.value,
-      breakStart4: elB1.value,
-      breakEnd4: elB2.value,
-      out4: elOut.value,
-      inHHMM: inHH,
-      breakStartHHMM: hhmmFrom4digits(elB1.value),
-      breakEndHHMM: hhmmFrom4digits(elB2.value),
-      outHHMM: outHH,
-      obs: elObs.value || "",
-      scheduleMin: schedMin
-    };
-    if(!updated.folga && (!inHH || !outHH)){
+    const current = getEntry(empId, ym, day) || { ...defaultEntryFor(prefDate), scheduleMin: defaultMin };
+    if(!current.folga && (!inHH || !outHH)){
       showToast("Preencha ENTRADA e SAÍDA (ou marque folga).");
       return;
     }
-    try{
-      await upsertEntry(empId, dateISO, updated);
-      showToast("Salvo!");
-      refreshSidebarKPIs();
-    }catch(err){
-      showToast(err?.message || "Erro ao salvar.");
-    }
+    const updated={
+      ...current,
+      date: prefDate,
+      in4: elIn.value,
+      out4: elOut.value,
+      inHHMM: inHH,
+      outHHMM: outHH,
+      obs: elObs.value || "",
+      scheduleMin: current.scheduleMin ?? defaultMin
+    };
+    setEntry(empId, ym, day, updated);
+    showToast("Salvo!");
+    refreshSidebarKPIs();
+    renderPonto(prefDate);
   };
 
   live();
   refreshSidebarKPIs();
 }
 
-// ====== Funcionários ======
-async function renderFuncionarios(){
+/* ===== Funcionários ===== */
+function renderFuncionarios(){
   currentPageRenderer = renderFuncionarios;
-  await fetchEmployees();
-
+  const db=getDB();
   page.innerHTML = `
     <h2>👥 Funcionários</h2>
-    <p class="sub">Cadastre, edite e alterne. Tudo fica salvo na nuvem.</p>
+    <p class="sub">Cadastre, edite e alterne de funcionário. Tudo fica salvo no aparelho.</p>
     <div class="row"><button class="btn primary" id="fAdd">➕ Novo funcionário</button></div>
     <div class="sep"></div>
     <table>
       <thead><tr><th>Nome</th><th>Cargo</th><th>ID</th><th>Ações</th></tr></thead>
       <tbody>
-        ${state.employees.map(e=>{
+        ${db.employees.map(e=>{
           const isSel = e.id===getSelectedEmployeeId();
           return `
             <tr>
@@ -1099,31 +855,27 @@ async function renderFuncionarios(){
   $("#fAdd").onclick=()=>openEmployeeCreate();
 
   page.querySelectorAll("button[data-act]").forEach(btn=>{
-    btn.onclick=async ()=>{
+    btn.onclick=()=>{
       const act=btn.getAttribute("data-act");
       const id=btn.getAttribute("data-id");
       if(act==="sel"){
         setSelectedEmployeeId(id);
         showToast("Funcionário selecionado.");
-        await ensureMonthLoadedForSelected();
-        refreshSidebarKPIs();
         renderEmployeeSelect();
-        await renderMesPlanilha();
+        refreshSidebarKPIs();
+        renderMesPlanilha();
       }
-      if(act==="edit") await openEmployeeEdit(id);
+      if(act==="edit") openEmployeeEdit(id);
       if(act==="del"){
         if(!confirm("Excluir funcionário e todos os dados dele?")) return;
-        try{
-          await deleteEmployee(id);
-          showToast("Excluído.");
-          await fetchEmployees();
-          renderEmployeeSelect();
-          await ensureMonthLoadedForSelected();
-          refreshSidebarKPIs();
-          await renderFuncionarios();
-        }catch(err){
-          showToast(err?.message || "Erro ao excluir.");
-        }
+        setDB(db=>{
+          db.employees = db.employees.filter(e=>e.id!==id);
+          delete db.entries[id];
+        });
+        showToast("Excluído.");
+        renderEmployeeSelect();
+        refreshSidebarKPIs();
+        renderFuncionarios();
       }
     };
   });
@@ -1131,122 +883,84 @@ async function renderFuncionarios(){
   refreshSidebarKPIs();
 }
 
-async function openEmployeeCreate(){
+function openEmployeeCreate(){
   const name = prompt("Nome do funcionário:");
   if(!name) return;
   const role = prompt("Cargo (opcional):") || "";
-  try{
-    const emp = await createEmployee(name.trim(), role.trim());
-    showToast("Funcionário criado.");
-    await fetchEmployees();
-    renderEmployeeSelect();
-    setSelectedEmployeeId(emp.id);
-    await ensureMonthLoadedForSelected();
-    refreshSidebarKPIs();
-    await renderMesPlanilha();
-  }catch(err){
-    showToast(err?.message || "Erro ao criar funcionário.");
-  }
+  const id = crypto.randomUUID();
+  setDB(db=>{
+    db.employees.push({id, name:name.trim(), role:role.trim(), createdAt:Date.now()});
+  });
+  renderEmployeeSelect();
+  setSelectedEmployeeId(id);
+  showToast("Funcionário criado.");
+  refreshSidebarKPIs();
+  renderMesPlanilha();
 }
-async function openEmployeeEdit(id){
-  const emp=state.employees.find(e=>e.id===id);
+function openEmployeeEdit(id){
+  const db=getDB();
+  const emp=db.employees.find(e=>e.id===id);
   if(!emp) return;
   const name=prompt("Nome:", emp.name);
   if(!name) return;
   const role=prompt("Cargo (opcional):", emp.role||"") || "";
-  try{
-    await updateEmployee(id, name.trim(), role.trim());
-    showToast("Atualizado.");
-    await fetchEmployees();
-    renderEmployeeSelect();
-    refreshSidebarKPIs();
-    await renderFuncionarios();
-  }catch(err){
-    showToast(err?.message || "Erro ao atualizar.");
-  }
+  setDB(db=>{
+    const e=db.employees.find(x=>x.id===id);
+    if(e){ e.name=name.trim(); e.role=role.trim(); }
+  });
+  showToast("Atualizado.");
+  renderEmployeeSelect();
+  refreshSidebarKPIs();
+  renderFuncionarios();
 }
 
-// ====== Export ======
-async function exportJSON(){
-  // exporta tudo do funcionário selecionado (employees+entries+settings)
-  try{
-    const empId = getSelectedEmployeeId();
-    if(!empId){ showToast("Selecione um funcionário."); return; }
-
-    const { data: emp, error: e1 } = await supabase.from("employees").select("*").eq("id", empId).single();
-    if(e1) throw e1;
-
-    const { data: entries, error: e2 } = await supabase.from("entries").select("*").eq("employee_id", empId);
-    if(e2) throw e2;
-
-    const { data: settings, error: e3 } = await supabase.from("settings").select("*").limit(1);
-    if(e3) throw e3;
-
-    const payload = { exportedAt: new Date().toISOString(), employee: emp, settings: settings?.[0] || null, entries: entries || [] };
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
-    downloadBlob(blob, `pontopro_backup_${slug(emp.name||"funcionario")}_${nowISODate()}.json`);
-    showToast("JSON exportado.");
-  }catch(err){
-    showToast(err?.message || "Erro exportando JSON.");
-  }
+/* ===== Export ===== */
+function exportJSON(){
+  const db=getDB();
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  downloadBlob(blob, `pontopro_backup_${nowISODate()}.json`);
+  showToast("JSON exportado.");
 }
+function exportCSV(){
+  const db=getDB();
+  const empId=getSelectedEmployeeId();
+  if(!empId){ showToast("Selecione um funcionário."); return; }
+  const emp=db.employees.find(e=>e.id===empId);
+  const name=emp?.name || "funcionario";
+  const defaultMin = db.settings.defaultScheduleMin ?? 480;
+  const rows=[["Funcionario","Mes","Dia","Entrada","IntInicio","IntFim","Saida","Jornada","Trabalhadas","Excedidas","R$ Exced","Folga","Obs"]];
 
-async function exportCSV(){
-  try{
-    const empId=getSelectedEmployeeId();
-    if(!empId){ showToast("Selecione um funcionário."); return; }
-    const emp=state.employees.find(e=>e.id===empId);
-    const name=emp?.name || "funcionario";
-
-    const { data: entries, error } = await supabase.from("entries").select("*").eq("employee_id", empId).order("date", {ascending:true});
-    if(error) throw error;
-
-    const defaultMin = state.settings.defaultScheduleMin ?? 480;
-    const rows=[["Funcionario","Data","Entrada","IntInicio","IntFim","Saida","Jornada","Trabalhadas","Excedidas","R$ Exced","Folga","Obs"]];
-
-    for(const row of (entries||[])){
-      const entry = {
-        date: row.date,
-        in4: row.in4||"",
-        breakStart4: row.break_start4||"",
-        breakEnd4: row.break_end4||"",
-        out4: row.out4||"",
-        inHHMM: hhmmFrom4digits(row.in4||""),
-        breakStartHHMM: hhmmFrom4digits(row.break_start4||""),
-        breakEndHHMM: hhmmFrom4digits(row.break_end4||""),
-        outHHMM: hhmmFrom4digits(row.out4||""),
-        scheduleMin: row.schedule_min ?? defaultMin,
-        obs: row.obs||"",
-        folga: !!row.folga
-      };
-      const c=calcWorkedAndOver(entry);
+  const entries=db.entries?.[empId] || {};
+  const months=Object.keys(entries).sort();
+  for(const ym of months){
+    const month=entries[ym] || {};
+    const days=Object.keys(month).map(Number).sort((a,b)=>a-b);
+    for(const d of days){
+      const e=month[d];
+      const c=calcWorkedAndOver(e);
       const overPay = calcOverPay(c.overMin||0);
-
       rows.push([
-        name,
-        row.date,
-        entry.inHHMM||"", entry.breakStartHHMM||"", entry.breakEndHHMM||"", entry.outHHMM||"",
-        fmtMin(entry.scheduleMin ?? defaultMin),
+        name, ym, String(d).padStart(2,"0"),
+        e.inHHMM||"", e.breakStartHHMM||"", e.breakEndHHMM||"", e.outHHMM||"",
+        fmtMin(e.scheduleMin ?? defaultMin),
         c.workedMin===null ? "" : fmtMin(c.workedMin),
         c.overMin===null ? "" : fmtMin(c.overMin),
         overPay ? (Math.round(overPay*100)/100).toString().replace(".",",") : "",
-        entry.folga ? "SIM":"NAO",
-        (entry.obs||"").replaceAll("\n"," ")
+        e.folga ? "SIM":"NAO",
+        (e.obs||"").replaceAll("\n"," ")
       ]);
     }
-
-    const csv = rows.map(r=>r.map(v=>{
-      const s=String(v??"");
-      if(/[",;\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
-      return s;
-    }).join(";")).join("\n");
-
-    const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
-    downloadBlob(blob, `pontopro_${slug(name)}_${nowISODate()}.csv`);
-    showToast("CSV exportado.");
-  }catch(err){
-    showToast(err?.message || "Erro exportando CSV.");
   }
+
+  const csv = rows.map(r=>r.map(v=>{
+    const s=String(v??"");
+    if(/[",;\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+    return s;
+  }).join(";")).join("\n");
+
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  downloadBlob(blob, `pontopro_${slug(name)}_${nowISODate()}.csv`);
+  showToast("CSV exportado.");
 }
 
 function downloadBlob(blob, filename){
@@ -1257,98 +971,81 @@ function downloadBlob(blob, filename){
   setTimeout(()=>URL.revokeObjectURL(url), 6000);
 }
 
-// ====== Boot ======
-async function boot(){
-  state.session = await getSession();
-  if(!state.session){
-    loginModal.style.display = "flex";
-    loginStatus.textContent = "Aguardando login…";
-    return;
-  }
-  loginModal.style.display = "none";
-
-  try{
-    await loadSettings();
-    themeApply(state.theme || "dark");
-
-    await fetchEmployees();
-    if(state.employees.length===0){
-      // cria um padrão
-      const emp = await createEmployee("Funcionário 1", "");
-      state.employees = [emp];
-    }
-
-    renderEmployeeSelect();
-
-    // inputs settings
-    hourRateEl.value = (state.settings.hourRate ?? 0).toString().replace(".",",");
-    otMultEl.value = (state.settings.otMultiplier ?? 1.0).toString().replace(".",",");
-    defaultSchedEl.value = minTo4(state.settings.defaultScheduleMin ?? 480);
-
-    hourRateEl.addEventListener("change", async ()=>{
-      try{
-        const rate = parseMoneyBr(hourRateEl.value);
-        await saveSettingsToDB({ hourRate: rate });
-        showToast("Valor/hora salvo.");
-        refreshSidebarKPIs();
-      }catch(err){ showToast(err?.message || "Erro salvando valor/hora."); }
-    });
-    otMultEl.addEventListener("change", async ()=>{
-      try{
-        const mult = Math.max(parseFloatSafe(otMultEl.value) || 1.0, 0);
-        await saveSettingsToDB({ otMultiplier: mult });
-        showToast("Multiplicador salvo.");
-        refreshSidebarKPIs();
-      }catch(err){ showToast(err?.message || "Erro salvando multiplicador."); }
-    });
-
-    defaultSchedEl.addEventListener("input", ()=>{
-      defaultSchedEl.value = defaultSchedEl.value.replace(/[^\d]/g,"").slice(0,4);
-    });
-    defaultSchedEl.addEventListener("change", async ()=>{
-      try{
-        const mins = schedule4ToMin(defaultSchedEl.value) ?? 480;
-        await saveSettingsToDB({ defaultScheduleMin: mins });
-        showToast("Jornada padrão salva.");
-        // recarrega mês pra refletir padrão nos vazios
-        state.monthCache = { ym:null, empId:null, mapByDay:{} };
-        await renderMesPlanilha();
-      }catch(err){ showToast(err?.message || "Erro salvando jornada padrão."); }
-    });
-
-    btnApplySchedMonth.onclick = async ()=>{
-      try{
-        const empId = getSelectedEmployeeId();
-        if(!empId){ showToast("Selecione um funcionário."); return; }
-        const ym = ymFromDate(nowISODate());
-        const mins = schedule4ToMin(defaultSchedEl.value) ?? (state.settings.defaultScheduleMin ?? 480);
-        await setMonthSchedule(empId, ym, mins);
-        showToast("Jornada aplicada no mês.");
-        await renderMesPlanilha();
-        refreshSidebarKPIs();
-      }catch(err){ showToast(err?.message || "Erro aplicando jornada."); }
-    };
-
-    await ensureMonthLoadedForSelected();
-    refreshSidebarKPIs();
-    await renderMesPlanilha();
-  }catch(err){
-    // Erros comuns: key errada / RLS / tabelas não criadas
-    loginModal.style.display = "flex";
-    loginStatus.textContent = "Erro no setup ❌";
-    showToast("Erro: " + (err?.message || "verifique Supabase"));
-  }
+function resetAll(){
+  if(!confirm("Isso vai apagar TODOS os funcionários e registros deste aparelho. Confirma?")) return;
+  localStorage.removeItem(LS_KEY);
+  localStorage.removeItem("PONTOPRO_SELECTED_EMP");
+  showToast("Tudo zerado.");
+  boot();
 }
 
-// Reage a mudanças de sessão (ex: expiração)
-supabase.auth.onAuthStateChange(async (_event, session)=>{
-  state.session = session;
-  if(!session){
-    loginModal.style.display = "flex";
-  }else{
-    loginModal.style.display = "none";
+/* ===== Utils ===== */
+function escapeHTML(s){
+  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+function slug(s){
+  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+}
+
+/* ===== Boot ===== */
+function boot(){
+  const db=getDB();
+  themeApply(db.settings.theme || "dark");
+  renderEmployeeSelect();
+
+  hourRateEl.value = (db.settings.hourRate ?? 0).toString().replace(".",",");
+  otMultEl.value = (db.settings.otMultiplier ?? 1.0).toString().replace(".",",");
+  defaultSchedEl.value = minTo4(db.settings.defaultScheduleMin ?? 480);
+
+  function saveRates(){
+    const rate = parseMoneyBr(hourRateEl.value);
+    const mult = Math.max(parseFloatSafe(otMultEl.value) || 1.0, 0);
+    setDB(db=>{
+      db.settings.hourRate = rate;
+      db.settings.otMultiplier = mult;
+    });
+    refreshSidebarKPIs();
   }
-});
+  hourRateEl.addEventListener("change", ()=>{ saveRates(); showToast("Valor/hora salvo."); });
+  otMultEl.addEventListener("change", ()=>{ saveRates(); showToast("Multiplicador salvo."); });
+
+  function saveDefaultSched(){
+    const mins = schedule4ToMin(defaultSchedEl.value) ?? 480;
+    setDB(db=>{ db.settings.defaultScheduleMin = mins; });
+    refreshSidebarKPIs();
+  }
+  defaultSchedEl.addEventListener("input", ()=>{
+    defaultSchedEl.value = defaultSchedEl.value.replace(/[^\d]/g,"").slice(0,4);
+  });
+  defaultSchedEl.addEventListener("change", ()=>{
+    saveDefaultSched();
+    showToast("Jornada padrão salva.");
+  });
+
+  btnApplySchedMonth.onclick = ()=>{
+    const empId = getSelectedEmployeeId();
+    if(!empId){ showToast("Selecione um funcionário."); return; }
+
+    const ym = ymFromDate(nowISODate());
+    const mins = schedule4ToMin(defaultSchedEl.value) ?? 480;
+
+    setDB(db=>{
+      ensureMonth(db, empId, ym);
+      for(let d=1; d<=31; d++){
+        const existing = db.entries[empId][ym][d] || defaultEntryFor(`${ym}-${pad2(d)}`);
+        db.entries[empId][ym][d] = { ...existing, scheduleMin: mins };
+      }
+    });
+
+    showToast("Jornada aplicada no mês.");
+    renderMesPlanilha();
+    refreshSidebarKPIs();
+  };
+
+  refreshSidebarKPIs();
+  renderMesPlanilha();
+}
 
 boot();
 </script>
